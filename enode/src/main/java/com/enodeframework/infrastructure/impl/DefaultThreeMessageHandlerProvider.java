@@ -51,10 +51,7 @@ public class DefaultThreeMessageHandlerProvider extends AbstractHandlerProvider<
         if (!IDomainEvent.class.isAssignableFrom(method.getParameterTypes()[2])) {
             return false;
         }
-        if (!isMethodAnnotationSubscribe(method)) {
-            return false;
-        }
-        return true;
+        return isMethodAnnotationSubscribe(method);
     }
 
     @Override

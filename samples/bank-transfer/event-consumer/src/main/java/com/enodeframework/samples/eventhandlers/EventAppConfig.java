@@ -1,8 +1,6 @@
 package com.enodeframework.samples.eventhandlers;
 
 import com.enodeframework.ENodeBootstrap;
-import com.enodeframework.eventing.impl.InMemoryEventStore;
-import com.enodeframework.infrastructure.impl.InMemoryPublishedVersionStore;
 import com.enodeframework.mysql.MysqlEventStore;
 import com.enodeframework.mysql.MysqlPublishedVersionStore;
 import com.enodeframework.queue.command.CommandResultProcessor;

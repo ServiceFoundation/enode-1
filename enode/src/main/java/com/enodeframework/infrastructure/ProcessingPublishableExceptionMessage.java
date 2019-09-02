@@ -3,8 +3,7 @@ package com.enodeframework.infrastructure;
 /**
  * @author anruence@gmail.com
  */
-public class ProcessingPublishableExceptionMessage implements IProcessingMessage<ProcessingPublishableExceptionMessage, IPublishableException> {
-    private ProcessingMessageMailbox<ProcessingPublishableExceptionMessage, IPublishableException> mailbox;
+public class ProcessingPublishableExceptionMessage {
     private IMessageProcessContext processContext;
     private IPublishableException message;
 
@@ -13,20 +12,10 @@ public class ProcessingPublishableExceptionMessage implements IProcessingMessage
         this.processContext = processContext;
     }
 
-    @Override
-    public void setMailbox(ProcessingMessageMailbox<ProcessingPublishableExceptionMessage, IPublishableException> mailbox) {
-        this.mailbox = mailbox;
-    }
-
-    @Override
     public void complete() {
         processContext.notifyMessageProcessed();
-        if (mailbox != null) {
-            mailbox.completeMessage(this);
-        }
     }
 
-    @Override
     public IPublishableException getMessage() {
         return message;
     }

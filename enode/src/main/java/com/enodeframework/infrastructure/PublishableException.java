@@ -24,16 +24,6 @@ public abstract class PublishableException extends RuntimeException implements I
     public abstract void restoreFrom(Map<String, String> serializableInfo);
 
     @Override
-    public String getRoutingKey() {
-        return null;
-    }
-
-    @Override
-    public String getTypeName() {
-        return this.getClass().getName();
-    }
-
-    @Override
     public String getId() {
         return id;
     }
@@ -53,13 +43,4 @@ public abstract class PublishableException extends RuntimeException implements I
         this.timestamp = timestamp;
     }
 
-    @Override
-    public int getSequence() {
-        return sequence;
-    }
-
-    @Override
-    public void setSequence(int sequence) {
-        this.sequence = sequence;
-    }
 }

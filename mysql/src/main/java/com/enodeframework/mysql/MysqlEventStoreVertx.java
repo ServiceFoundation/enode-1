@@ -47,8 +47,6 @@ public class MysqlEventStoreVertx implements IEventStore {
     @Autowired
     private IEventSerializer eventSerializer;
 
-    private boolean supportBatchAppendEvent = true;
-
     public MysqlEventStoreVertx(DataSource ds, OptionSetting optionSetting) {
         Ensure.notNull(ds, "ds");
         if (optionSetting != null) {
@@ -73,15 +71,6 @@ public class MysqlEventStoreVertx implements IEventStore {
         Ensure.positive(bulkCopyBatchSize, "bulkCopyBatchSize");
         Ensure.positive(bulkCopyTimeout, "bulkCopyTimeout");
         sqlClient = JDBCClient.create(ObjectContainer.vertx, ds);
-    }
-
-    @Override
-    public boolean isSupportBatchAppendEvent() {
-        return supportBatchAppendEvent;
-    }
-
-    public void setSupportBatchAppendEvent(boolean supportBatchAppendEvent) {
-        this.supportBatchAppendEvent = supportBatchAppendEvent;
     }
 
     @Override
@@ -127,50 +116,11 @@ public class MysqlEventStoreVertx implements IEventStore {
                     return new AsyncTaskResult<>(AsyncTaskStatus.Success, EventAppendResult.DuplicateCommand);
                 }
                 logger.error("Batch append event has sql exception.", ex);
-                return new AsyncTaskResult<>(AsyncTaskStatus.IOException, ex.getMessage(), EventAppendResult.Failed);
+                return new AsyncTaskResult(AsyncTaskStatus.IOException, ex.getMessage(), EventAppendResult.Failed);
             }
             logger.error("Batch append event has unknown exception.", throwable);
-            return new AsyncTaskResult<>(AsyncTaskStatus.Failed, throwable.getMessage(), EventAppendResult.Failed);
+            return new AsyncTaskResult(AsyncTaskStatus.Failed, throwable.getMessage(), EventAppendResult.Failed);
         });
-    }
-
-    @Override
-    public CompletableFuture<AsyncTaskResult<EventAppendResult>> appendAsync(DomainEventStream eventStream) {
-        return IOHelper.tryIOFuncAsync(() -> {
-            CompletableFuture<AsyncTaskResult<EventAppendResult>> future = new CompletableFuture<>();
-            StreamRecordVertx record = convertTo(eventStream);
-            String sql = String.format("INSERT INTO %s(AggregateRootId,AggregateRootTypeName,CommandId,Version,CreatedOn,Events) VALUES(?,?,?,?,?,?)", getTableName(record.AggregateRootId));
-            JsonArray array = new JsonArray();
-            array.add(record.AggregateRootId);
-            array.add(record.AggregateRootTypeName);
-            array.add(record.CommandId);
-            array.add(record.Version);
-            array.add(record.CreatedOn.toInstant());
-            array.add(record.Events);
-            sqlClient.updateWithParams(sql, array, x -> {
-                if (x.succeeded()) {
-                    future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Success, EventAppendResult.Success));
-                    return;
-                }
-                if (x.cause() instanceof SQLException) {
-                    SQLException ex = (SQLException) x.cause();
-                    if (ex.getErrorCode() == 1062 && ex.getMessage().contains(versionIndexName)) {
-                        future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Success, EventAppendResult.DuplicateEvent));
-                        return;
-                    } else if (ex.getErrorCode() == 1062 && ex.getMessage().contains(commandIndexName)) {
-                        future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Success, EventAppendResult.DuplicateCommand));
-                        return;
-                    }
-                    logger.error(String.format("Append event has sql exception, eventStream: %s", eventStream), ex);
-                    future.complete(new AsyncTaskResult<>(AsyncTaskStatus.IOException, ex.getMessage(), EventAppendResult.Failed));
-                    return;
-                }
-                Throwable ex = x.cause();
-                logger.error(String.format("Append event has unknown exception, eventStream: %s", eventStream), ex);
-                future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Failed, ex.getMessage(), EventAppendResult.Failed));
-            });
-            return future;
-        }, "");
     }
 
     @Override

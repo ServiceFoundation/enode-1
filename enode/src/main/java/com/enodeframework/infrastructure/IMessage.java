@@ -10,12 +10,4 @@ public interface IMessage {
     Date getTimestamp();
 
     void setTimestamp(Date timestamp);
-
-    int getSequence();
-
-    void setSequence(int sequence);
-
-    String getRoutingKey();
-
-    String getTypeName();
 }

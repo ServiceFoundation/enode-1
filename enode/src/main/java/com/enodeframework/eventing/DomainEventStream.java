@@ -44,6 +44,14 @@ public class DomainEventStream {
         }
     }
 
+    public List<IDomainEvent> getEvents() {
+        return events;
+    }
+
+    public void setEvents(List<IDomainEvent> events) {
+        this.events = events;
+    }
+
     public String getId() {
         return id;
     }
@@ -86,10 +94,6 @@ public class DomainEventStream {
 
     public List<IDomainEvent> events() {
         return events;
-    }
-
-    public void setEvents(List<IDomainEvent> events) {
-        this.events = events;
     }
 
     public Date getTimestamp() {

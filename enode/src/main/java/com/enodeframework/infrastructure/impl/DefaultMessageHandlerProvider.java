@@ -41,10 +41,7 @@ public class DefaultMessageHandlerProvider extends AbstractHandlerProvider<Class
         if (!IMessage.class.isAssignableFrom(method.getParameterTypes()[0])) {
             return false;
         }
-        if (!isMethodAnnotationSubscribe(method)) {
-            return false;
-        }
-        return true;
+        return isMethodAnnotationSubscribe(method);
     }
 
     @Override

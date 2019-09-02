@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public abstract class AbstractDomainEventPublisher implements IMessagePublisher<DomainEventStreamMessage> {
     @Autowired
     protected IEventSerializer eventSerializer;
+
     private TopicData topicData;
 
     public void setEventSerializer(IEventSerializer eventSerializer) {
@@ -32,7 +33,7 @@ public abstract class AbstractDomainEventPublisher implements IMessagePublisher<
         Ensure.notNull(topicData, "topicData");
         EventStreamMessage eventMessage = createEventMessage(eventStream);
         String data = JsonTool.serialize(eventMessage);
-        String routeKey = eventStream.getRoutingKey() != null ? eventStream.getRoutingKey() : eventMessage.getAggregateRootId();
+        String routeKey = eventMessage.getAggregateRootId();
         QueueMessage queueMessage = new QueueMessage();
         queueMessage.setCode(QueueMessageTypeCode.DomainEventStreamMessage.getValue());
         queueMessage.setTopic(topicData.getTopic());

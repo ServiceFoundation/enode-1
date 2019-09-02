@@ -2,7 +2,7 @@ package com.enodeframework.eventing;
 
 import com.enodeframework.commanding.ProcessingCommand;
 
-public interface IEventService {
+public interface IEventCommittingService {
     /**
      * Commit the given aggregate's domain events to the eventstore async and publish the domain events.
      *
@@ -17,14 +17,4 @@ public interface IEventService {
      * @param eventStream
      */
     void publishDomainEventAsync(ProcessingCommand processingCommand, DomainEventStream eventStream);
-
-    /**
-     * Start background tasks.
-     */
-    void start();
-
-    /**
-     * Stop background tasks.
-     */
-    void stop();
 }

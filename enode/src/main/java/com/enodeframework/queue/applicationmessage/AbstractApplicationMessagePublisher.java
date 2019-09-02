@@ -1,8 +1,8 @@
 package com.enodeframework.queue.applicationmessage;
 
+import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.common.serializing.JsonTool;
 import com.enodeframework.common.utilities.Ensure;
-import com.enodeframework.infrastructure.IApplicationMessage;
 import com.enodeframework.infrastructure.IMessagePublisher;
 import com.enodeframework.queue.QueueMessage;
 import com.enodeframework.queue.QueueMessageTypeCode;
@@ -24,7 +24,7 @@ public abstract class AbstractApplicationMessagePublisher implements IMessagePub
         String appMessageData = JsonTool.serialize(message);
         ApplicationDataMessage appDataMessage = new ApplicationDataMessage(appMessageData, message.getClass().getName());
         String data = JsonTool.serialize(appDataMessage);
-        String routeKey = message.getRoutingKey() != null ? message.getRoutingKey() : message.getId();
+        String routeKey = message.getId();
         QueueMessage queueMessage = new QueueMessage();
         queueMessage.setBody(data);
         queueMessage.setRouteKey(routeKey);

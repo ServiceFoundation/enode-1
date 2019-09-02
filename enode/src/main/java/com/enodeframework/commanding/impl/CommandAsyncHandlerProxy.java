@@ -1,5 +1,6 @@
 package com.enodeframework.commanding.impl;
 
+import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.commanding.ICommand;
 import com.enodeframework.commanding.ICommandAsyncHandlerProxy;
 import com.enodeframework.common.container.IObjectContainer;
@@ -7,7 +8,6 @@ import com.enodeframework.common.exception.ENodeRuntimeException;
 import com.enodeframework.common.exception.IORuntimeException;
 import com.enodeframework.common.io.AsyncTaskResult;
 import com.enodeframework.common.io.Task;
-import com.enodeframework.infrastructure.IApplicationMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.invoke.MethodHandle;

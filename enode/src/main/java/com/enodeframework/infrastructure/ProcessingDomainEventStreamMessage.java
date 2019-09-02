@@ -1,14 +1,14 @@
 package com.enodeframework.infrastructure;
 
-import com.enodeframework.common.utilities.Ensure;
 import com.enodeframework.eventing.DomainEventStreamMessage;
+import com.enodeframework.eventing.ProcessingDomainEventStreamMessageMailBox;
 
 /**
  * @author anruence@gmail.com
  */
-public class ProcessingDomainEventStreamMessage implements IProcessingMessage<ProcessingDomainEventStreamMessage, DomainEventStreamMessage>, ISequenceProcessingMessage {
+public class ProcessingDomainEventStreamMessage {
     public DomainEventStreamMessage message;
-    private ProcessingMessageMailbox<ProcessingDomainEventStreamMessage, DomainEventStreamMessage> mailbox;
+    private ProcessingDomainEventStreamMessageMailBox mailbox;
     private IMessageProcessContext processContext;
 
     public ProcessingDomainEventStreamMessage(DomainEventStreamMessage message, IMessageProcessContext processContext) {
@@ -16,26 +16,21 @@ public class ProcessingDomainEventStreamMessage implements IProcessingMessage<Pr
         this.processContext = processContext;
     }
 
-    @Override
-    public void setMailbox(ProcessingMessageMailbox<ProcessingDomainEventStreamMessage, DomainEventStreamMessage> mailbox) {
+    public ProcessingDomainEventStreamMessageMailBox getMailbox() {
+        return mailbox;
+    }
+
+    public void setMailbox(ProcessingDomainEventStreamMessageMailBox mailbox) {
         this.mailbox = mailbox;
     }
 
-    @Override
-    public void addToWaitingList() {
-        Ensure.notNull(mailbox, "mailbox");
-        mailbox.addWaitingForRetryMessage(this);
-    }
-
-    @Override
     public void complete() {
         processContext.notifyMessageProcessed();
         if (mailbox != null) {
-            mailbox.completeMessage(this);
+            mailbox.completeRun();
         }
     }
 
-    @Override
     public DomainEventStreamMessage getMessage() {
         return message;
     }

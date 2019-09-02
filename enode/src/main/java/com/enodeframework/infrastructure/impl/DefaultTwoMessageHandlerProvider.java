@@ -48,10 +48,7 @@ public class DefaultTwoMessageHandlerProvider extends AbstractHandlerProvider<Ma
         if (!IDomainEvent.class.isAssignableFrom(method.getParameterTypes()[1])) {
             return false;
         }
-        if (!isMethodAnnotationSubscribe(method)) {
-            return false;
-        }
-        return true;
+        return isMethodAnnotationSubscribe(method);
     }
 
     @Override

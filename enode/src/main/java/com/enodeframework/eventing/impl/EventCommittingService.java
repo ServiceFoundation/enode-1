@@ -4,40 +4,41 @@ import com.enodeframework.commanding.CommandResult;
 import com.enodeframework.commanding.CommandStatus;
 import com.enodeframework.commanding.ICommand;
 import com.enodeframework.commanding.ProcessingCommand;
+import com.enodeframework.commanding.ProcessingCommandMailbox;
 import com.enodeframework.common.io.IOHelper;
-import com.enodeframework.common.scheduling.IScheduleService;
+import com.enodeframework.common.serializing.JsonTool;
 import com.enodeframework.common.utilities.Linq;
 import com.enodeframework.domain.IMemoryCache;
 import com.enodeframework.eventing.DomainEventStream;
 import com.enodeframework.eventing.DomainEventStreamMessage;
 import com.enodeframework.eventing.EventAppendResult;
 import com.enodeframework.eventing.EventCommittingContext;
-import com.enodeframework.eventing.IEventService;
+import com.enodeframework.eventing.EventCommittingContextMailBox;
+import com.enodeframework.eventing.IEventCommittingService;
 import com.enodeframework.eventing.IEventStore;
-import com.enodeframework.infrastructure.IMailBox;
 import com.enodeframework.infrastructure.IMessagePublisher;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
  * @author anruence@gmail.com
  */
-public class DefaultEventService implements IEventService {
-    private static final Logger logger = LoggerFactory.getLogger(DefaultEventService.class);
+public class EventCommittingService implements IEventCommittingService {
+    private static final Logger logger = LoggerFactory.getLogger(EventCommittingService.class);
     private int timeoutSeconds;
     private String taskName;
     private int eventMailBoxCount;
     private int scanExpiredAggregateIntervalMilliseconds = 5000;
-    private List<EventMailBox> eventMailBoxList;
-    @Autowired
-    private IScheduleService scheduleService;
+    private List<EventCommittingContextMailBox> eventCommittingContextMailBoxList;
     @Autowired
     private IMemoryCache memoryCache;
     @Autowired
@@ -45,39 +46,39 @@ public class DefaultEventService implements IEventService {
     @Autowired
     private IMessagePublisher<DomainEventStreamMessage> domainEventPublisher;
 
-    public DefaultEventService() {
-        this(1000, 5000, 4);
+    public EventCommittingService() {
+        this(1000, 4);
     }
 
-    public DefaultEventService(int eventMailBoxPersistenceMaxBatchSize, int timeoutSeconds, int eventMailBoxCount) {
-        this.eventMailBoxList = new ArrayList<>();
-        this.timeoutSeconds = timeoutSeconds;
+    public EventCommittingService(int eventMailBoxPersistenceMaxBatchSize, int eventMailBoxCount) {
+        this.eventCommittingContextMailBoxList = new ArrayList<>();
         this.eventMailBoxCount = eventMailBoxCount;
-        this.taskName = "CleanInactiveAggregates" + System.nanoTime() + new Random().nextInt(10000);
         for (int i = 0; i < eventMailBoxCount; i++) {
-            EventMailBox mailBox = new EventMailBox(String.valueOf(i), eventMailBoxPersistenceMaxBatchSize, this::batchPersistEventCommittingContexts);
-            eventMailBoxList.add(mailBox);
+            EventCommittingContextMailBox mailBox = new EventCommittingContextMailBox(i, eventMailBoxPersistenceMaxBatchSize, this::batchPersistEventCommittingContexts);
+            eventCommittingContextMailBoxList.add(mailBox);
         }
     }
 
-    public DefaultEventService setScheduleService(IScheduleService scheduleService) {
-        this.scheduleService = scheduleService;
-        return this;
-    }
-
-    public DefaultEventService setMemoryCache(IMemoryCache memoryCache) {
+    public EventCommittingService setMemoryCache(IMemoryCache memoryCache) {
         this.memoryCache = memoryCache;
         return this;
     }
 
-    public DefaultEventService setEventStore(IEventStore eventStore) {
+    public EventCommittingService setEventStore(IEventStore eventStore) {
         this.eventStore = eventStore;
         return this;
     }
 
-    public DefaultEventService setDomainEventPublisher(IMessagePublisher<DomainEventStreamMessage> domainEventPublisher) {
+    public EventCommittingService setDomainEventPublisher(IMessagePublisher<DomainEventStreamMessage> domainEventPublisher) {
         this.domainEventPublisher = domainEventPublisher;
         return this;
+    }
+
+    @Override
+    public void commitDomainEventAsync(EventCommittingContext eventCommittingContext) {
+        int eventMailboxIndex = getEventMailBoxIndex(eventCommittingContext.getEventStream().getAggregateRootId());
+        EventCommittingContextMailBox eventMailbox = eventCommittingContextMailBoxList.get(eventMailboxIndex);
+        eventMailbox.enqueueMessage(eventCommittingContext);
     }
 
     private int getEventMailBoxIndex(String aggregateRootId) {
@@ -95,19 +96,9 @@ public class DefaultEventService implements IEventService {
         if (committingContexts == null || committingContexts.size() == 0) {
             return;
         }
-        if (eventStore.isSupportBatchAppendEvent()) {
-            batchPersistEventAsync(committingContexts, 0);
-        } else {
-            persistEventOneByOne(committingContexts);
-        }
+        batchPersistEventAsync(committingContexts, 0);
     }
 
-    @Override
-    public void commitDomainEventAsync(EventCommittingContext eventCommittingContext) {
-        int eventMailboxIndex = getEventMailBoxIndex(eventCommittingContext.getEventStream().getAggregateRootId());
-        EventMailBox eventMailbox = eventMailBoxList.get(eventMailboxIndex);
-        eventMailbox.enqueueMessage(eventCommittingContext);
-    }
 
     @Override
     public void publishDomainEventAsync(ProcessingCommand processingCommand, DomainEventStream eventStream) {
@@ -120,43 +111,84 @@ public class DefaultEventService implements IEventService {
         publishDomainEventAsync(processingCommand, eventStreamMessage, 0);
     }
 
-    @Override
-    public void start() {
-        scheduleService.startTask(taskName, this::cleanInactiveMailbox, scanExpiredAggregateIntervalMilliseconds, scanExpiredAggregateIntervalMilliseconds);
-    }
-
-    @Override
-    public void stop() {
-        scheduleService.stopTask(taskName);
-    }
-
     private void batchPersistEventAsync(List<EventCommittingContext> committingContexts, int retryTimes) {
         IOHelper.tryAsyncActionRecursively("BatchPersistEventAsync",
                 () -> eventStore.batchAppendAsync(committingContexts.stream().map(EventCommittingContext::getEventStream).collect(Collectors.toList())),
                 result ->
                 {
+                    EventCommittingContextMailBox eventMailBox = Linq.first(committingContexts).getMailBox();
                     EventAppendResult appendResult = result.getData();
-                    if (appendResult == EventAppendResult.Success) {
-                        IMailBox eventMailBox = Linq.first(committingContexts).getMailBox();
+                    //针对持久化成功的聚合根，发布这些聚合根的事件到Q端
+                    if (appendResult.getSuccessAggregateRootIdList().size() > 0) {
+                        Map<String, List<EventCommittingContext>> successCommittedContextDict = Maps.newHashMap();
+                        for (String aggregateRootId : appendResult.getSuccessAggregateRootIdList()) {
+                            List<EventCommittingContext> contextList = committingContexts.stream().filter(x -> x.getEventStream().getAggregateRootId().equals(aggregateRootId)).collect(Collectors.toList());
+                            if (contextList.size() > 0) {
+                                successCommittedContextDict.put(aggregateRootId, contextList);
+                            }
+                        }
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Batch persist event success, routingKey: {}, eventStreamCount: {}, minEventVersion: {}, maxEventVersion: {}", eventMailBox.getRoutingKey(), committingContexts.size(), Linq.first(committingContexts).getEventStream().getVersion(), Linq.last(committingContexts).getEventStream().getVersion());
+                            logger.debug("Batch persist events, mailboxNumber: {}, succeedAggregateRootCount: {}, detailEventStreamCount: {}",
+                                    eventMailBox.getNumber(),
+                                    appendResult.getSuccessAggregateRootIdList().size(),
+                                    JsonTool.serialize(successCommittedContextDict));
                         }
-                        committingContexts.forEach(context -> publishDomainEventAsync(context.getProcessingCommand(), context.getEventStream()));
-                        for (EventCommittingContext committingContext : committingContexts) {
-                            committingContext.getMailBox().completeMessage(committingContext, true);
-                        }
-                        eventMailBox.completeRun();
-                    } else if (appendResult == EventAppendResult.DuplicateEvent) {
-                        IMailBox eventMailBox = Linq.first(committingContexts).getMailBox();
-                        logger.warn("Batch persist event has concurrent version conflict, routingKey: {}, eventStreamCount: {}, minEventVersion: {}, maxEventVersion: {}", eventMailBox.getRoutingKey(), committingContexts.size(), Linq.first(committingContexts).getEventStream().getVersion(), Linq.last(committingContexts).getEventStream().getVersion());
-                        processDuplicateEvent(Linq.first(committingContexts));
-                    } else if (appendResult == EventAppendResult.DuplicateCommand) {
-                        persistEventOneByOne(committingContexts);
+
+                        CompletableFuture.runAsync(() -> {
+                            successCommittedContextDict.values().forEach(x -> {
+                                for (EventCommittingContext context : x) {
+                                    publishDomainEventAsync(context.getProcessingCommand(), context.getEventStream());
+                                }
+                            });
+                        });
                     }
+                    //针对持久化出现重复的命令ID，则重新发布这些命令对应的领域事件到Q端
+                    if (appendResult.getDuplicateCommandIdList().size() > 0) {
+                        logger.warn("Batch persist events, mailboxNumber: {}, duplicateCommandIdCount: {}, detail: {}",
+                                eventMailBox.getNumber(),
+                                appendResult.getDuplicateCommandIdList().size(),
+                                JsonTool.serialize(appendResult.getDuplicateCommandIdList()));
+
+                        for (String commandId : appendResult.getDuplicateCommandIdList()) {
+                            Optional<EventCommittingContext> committingContextOptional = committingContexts.stream().filter(x -> x.getProcessingCommand().getMessage().getId().equals(commandId)).findFirst();
+                            if (committingContextOptional.isPresent()) {
+                                EventCommittingContext committingContext = committingContextOptional.get();
+                                ProcessingCommandMailbox commandMailBox = committingContext.getProcessingCommand().getMailBox();
+                                tryToRepublishEventAsync(committingContext, 0);
+                            }
+
+                        }
+                    }
+
+                    //针对持久化出现版本冲突的聚合根，则自动处理每个聚合根的冲突
+                    if (appendResult.getDuplicateEventAggregateRootIdList().size() > 0) {
+                        logger.warn("Batch persist events, mailboxNumber: {}, duplicateEventAggregateRootCount: {}, detail: {}",
+                                eventMailBox.getNumber(),
+                                appendResult.getDuplicateEventAggregateRootIdList().size(),
+                                JsonTool.serialize(appendResult.getDuplicateEventAggregateRootIdList()));
+
+                        for (String aggregateRootId : appendResult.getDuplicateCommandIdList()) {
+                            Optional<EventCommittingContext> committingContextOptional = committingContexts.stream().filter(x -> x.getEventStream().getAggregateRootId().equals(aggregateRootId)).findFirst();
+                            if (committingContextOptional.isPresent()) {
+                                EventCommittingContext context = committingContextOptional.get();
+                                processAggregateDuplicateEvent(context);
+                            }
+                        }
+                    }
+                    //最终，将当前的EventMailBox的本次处理标记为处理完成，然后继续可以处理下一批事件
+                    eventMailBox.completeRun();
                 },
                 () -> String.format("[contextListCount:%d]", committingContexts.size()),
                 errorMessage -> logger.error("Batch persist event has unknown exception, the code should not be run to here, errorMessage: {}", errorMessage),
                 retryTimes, true);
+    }
+
+    private void processAggregateDuplicateEvent(EventCommittingContext eventCommittingContext) {
+        if (eventCommittingContext.getEventStream().getVersion() == 1) {
+            handleFirstEventDuplicationAsync(eventCommittingContext, 0);
+        } else {
+            resetCommandMailBoxConsumingSequence(eventCommittingContext, eventCommittingContext.getProcessingCommand().getSequence());
+        }
     }
 
     private void processDuplicateEvent(EventCommittingContext eventCommittingContext) {
@@ -167,47 +199,14 @@ public class DefaultEventService implements IEventService {
         }
     }
 
-    private void persistEventOneByOne(List<EventCommittingContext> contextList) {
-        concatContexts(contextList);
-        persistEvent(Linq.first(contextList), 0);
-    }
-
-    private void persistEvent(EventCommittingContext context, int retryTimes) {
-        IOHelper.tryAsyncActionRecursively("PersistEvent",
-                () -> eventStore.appendAsync(context.getEventStream()),
-                result -> {
-                    if (result.getData() == EventAppendResult.Success) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Persist events success, {}", context.getEventStream());
-                        }
-                        publishDomainEventAsync(context.getProcessingCommand(), context.getEventStream());
-                        if (context.getNext() != null) {
-                            persistEvent(context.getNext(), 0);
-                        } else {
-                            context.getMailBox().completeMessage(context, true);
-                            context.getMailBox().completeRun();
-                        }
-                    } else if (result.getData() == EventAppendResult.DuplicateEvent) {
-                        logger.warn("Persist event has concurrent version conflict, eventStream: {}", context.getEventStream());
-                        processDuplicateEvent(context);
-                    } else if (result.getData() == EventAppendResult.DuplicateCommand) {
-                        logger.warn("Persist event has duplicate command, eventStream: {}", context.getEventStream());
-                        resetCommandMailBoxConsumingSequence(context, context.getProcessingCommand().getSequence() + 1).thenAccept(x -> {
-                        });
-                        tryToRepublishEventAsync(context, 0);
-                    }
-                },
-                () -> String.format("[eventStream:%s]", context.getEventStream()),
-                errorMessage -> logger.error("Persist event has unknown exception, the code should not be run to here, errorMessage: {}", errorMessage),
-                retryTimes, true);
-    }
-
     private CompletableFuture<Void> resetCommandMailBoxConsumingSequence(EventCommittingContext context, long consumingSequence) {
         ProcessingCommand processingCommand = context.getProcessingCommand();
         ICommand command = processingCommand.getMessage();
-        IMailBox commandMailBox = processingCommand.getMailBox();
-        EventMailBox eventMailBox = (EventMailBox) context.getMailBox();
+
+        ProcessingCommandMailbox commandMailBox = processingCommand.getMailBox();
+        EventCommittingContextMailBox eventMailBox = context.getMailBox();
         String aggregateRootId = context.getEventStream().getAggregateRootId();
+
         commandMailBox.pause();
         eventMailBox.removeAggregateAllEventCommittingContexts(aggregateRootId);
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -218,14 +217,13 @@ public class DefaultEventService implements IEventService {
                 } finally {
                     commandMailBox.resume();
                     commandMailBox.tryRun();
-                    eventMailBox.completeRun();
                 }
             });
         } catch (Exception ex) {
             future.completeExceptionally(ex);
         }
         return future.exceptionally(ex -> {
-            logger.error("ResetCommandMailBoxConsumingOffset has unknown exception, commandId: {}, aggregateRootId: {}", command.getId(), command.getAggregateRootId(), ex);
+            logger.error("ResetCommandMailBoxConsumingSequence has unknown exception, commandId: {}, aggregateRootId: {}", command.getId(), command.getAggregateRootId(), ex);
             return null;
         });
     }
@@ -324,27 +322,7 @@ public class DefaultEventService implements IEventService {
                 retryTimes, true);
     }
 
-    private void concatContexts(List<EventCommittingContext> contextList) {
-        for (int i = 0; i < contextList.size() - 1; i++) {
-            EventCommittingContext currentContext = contextList.get(i);
-            EventCommittingContext nextContext = contextList.get(i + 1);
-            currentContext.setNext(nextContext);
-        }
-    }
-
     private void completeCommand(ProcessingCommand processingCommand, CommandResult commandResult) {
         processingCommand.getMailBox().completeMessage(processingCommand, commandResult);
-    }
-
-    private void cleanInactiveMailbox() {
-//        List<EventMailBox> inactiveList = eventMailBoxList.stream().filter(entry ->
-//                entry.isInactive(timeoutSeconds) && entry.isRunning()
-//        ).collect(Collectors.toList());
-//
-//        inactiveList.forEach(entry -> {
-//            if (mailboxDict.remove(entry.getKey()) != null) {
-//                logger.info("Removed inactive event mailbox, aggregateRootId: {}", entry.getKey());
-//            }
-//        });
     }
 }

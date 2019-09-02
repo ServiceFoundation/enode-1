@@ -53,9 +53,4 @@ public class InsufficientBalanceException extends PublishableException {
         CurrentBalance = Double.parseDouble(serializableInfo.get("CurrentBalance"));
         CurrentAvailableBalance = Double.parseDouble(serializableInfo.get("CurrentAvailableBalance"));
     }
-
-    @Override
-    public String getRoutingKey() {
-        return AccountId;
-    }
 }

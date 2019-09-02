@@ -1,10 +1,10 @@
 package com.enodeframework.tests.Mocks;
 
+import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.common.exception.ENodeRuntimeException;
 import com.enodeframework.common.exception.IORuntimeException;
 import com.enodeframework.common.io.AsyncTaskResult;
 import com.enodeframework.common.io.AsyncTaskStatus;
-import com.enodeframework.infrastructure.IApplicationMessage;
 import com.enodeframework.infrastructure.IMessagePublisher;
 
 import java.util.concurrent.CompletableFuture;

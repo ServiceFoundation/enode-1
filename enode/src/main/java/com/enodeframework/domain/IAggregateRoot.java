@@ -9,7 +9,7 @@ import java.util.List;
  * Represents an aggregate root.
  */
 public interface IAggregateRoot {
-    String uniqueId();
+    String getUniqueId();
 
     int getVersion();
 

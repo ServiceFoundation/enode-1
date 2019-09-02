@@ -1,5 +1,6 @@
 package com.enodeframework.commanding.impl;
 
+import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.commanding.CommandResult;
 import com.enodeframework.commanding.CommandStatus;
 import com.enodeframework.commanding.ICommand;
@@ -23,9 +24,8 @@ import com.enodeframework.domain.IMemoryCache;
 import com.enodeframework.eventing.DomainEventStream;
 import com.enodeframework.eventing.EventCommittingContext;
 import com.enodeframework.eventing.IDomainEvent;
-import com.enodeframework.eventing.IEventService;
+import com.enodeframework.eventing.IEventCommittingService;
 import com.enodeframework.eventing.IEventStore;
-import com.enodeframework.infrastructure.IApplicationMessage;
 import com.enodeframework.infrastructure.IMessagePublisher;
 import com.enodeframework.infrastructure.IObjectProxy;
 import com.enodeframework.infrastructure.IPublishableException;
@@ -59,7 +59,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
     @Autowired
     private ITypeNameProvider typeNameProvider;
     @Autowired
-    private IEventService eventService;
+    private IEventCommittingService eventService;
     @Autowired
     private IMemoryCache memoryCache;
     @Autowired
@@ -87,7 +87,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
         return this;
     }
 
-    public DefaultProcessingCommandHandler setEventService(IEventService eventService) {
+    public DefaultProcessingCommandHandler setEventService(IEventCommittingService eventService) {
         this.eventService = eventService;
         return this;
     }
@@ -108,7 +108,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
     }
 
     @Override
-    public CompletableFuture<Void> handle(ProcessingCommand processingCommand) {
+    public CompletableFuture<Void> handleAsync(ProcessingCommand processingCommand) {
         ICommand command = processingCommand.getMessage();
         if (Strings.isNullOrEmpty(command.getAggregateRootId())) {
             String errorMessage = String.format("The aggregateRootId of command cannot be null or empty. commandType:%s, commandId:%s", command.getClass().getName(), command.getId());
@@ -215,7 +215,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
         }
         DomainEventStream eventStream = new DomainEventStream(
                 processingCommand.getMessage().getId(),
-                dirtyAggregateRoot.uniqueId(),
+                dirtyAggregateRoot.getUniqueId(),
                 typeNameProvider.getTypeName(dirtyAggregateRoot.getClass()),
                 Linq.first(changedEvents).getVersion(),
                 new Date(),
@@ -250,7 +250,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
         }
         return new DomainEventStream(
                 processingCommand.getMessage().getId(),
-                aggregateRoot.uniqueId(),
+                aggregateRoot.getUniqueId(),
                 typeNameProvider.getTypeName(aggregateRoot.getClass()),
                 aggregateRoot.getVersion() + 1,
                 new Date(),
@@ -373,7 +373,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
         ICommand command = processingCommand.getMessage();
         IOHelper.tryAsyncActionRecursively("PublishApplicationMessageAsync",
                 () -> applicationMessagePublisher.publishAsync(message),
-                result -> completeCommand(processingCommand, CommandStatus.Success, message.getTypeName(), JsonTool.serialize(message)),
+                result -> completeCommand(processingCommand, CommandStatus.Success, message.getClass().getName(), JsonTool.serialize(message)),
                 () -> String.format("[application message:[id:%s,type:%s],command:[id:%s,type:%s]]", message.getId(), message.getClass().getName(), command.getId(), command.getClass().getName()),
                 errorMessage -> logger.error(String.format("Publish application message has unknown exception, the code should not be run to here, errorMessage: %s", errorMessage)),
                 retryTimes, true);

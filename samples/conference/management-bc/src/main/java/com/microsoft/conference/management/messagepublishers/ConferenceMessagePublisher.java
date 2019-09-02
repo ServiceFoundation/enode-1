@@ -1,8 +1,8 @@
 package com.microsoft.conference.management.messagepublishers;
 
 import com.enodeframework.annotation.Event;
+import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.common.io.AsyncTaskResult;
-import com.enodeframework.infrastructure.IApplicationMessage;
 import com.enodeframework.infrastructure.IMessagePublisher;
 import com.microsoft.conference.common.management.message.SeatInsufficientMessage;
 import com.microsoft.conference.common.management.message.SeatReservationItem;

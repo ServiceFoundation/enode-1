@@ -100,10 +100,7 @@ public abstract class AbstractHandlerProvider<TKey, THandlerProxyInterface exten
         if (Modifier.isAbstract(type.getModifiers())) {
             return false;
         }
-        if (!containsHandleType(type)) {
-            return false;
-        }
-        return true;
+        return containsHandleType(type);
     }
 
     private boolean containsHandleType(Class type) {
