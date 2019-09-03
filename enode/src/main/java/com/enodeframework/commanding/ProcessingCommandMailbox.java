@@ -22,13 +22,14 @@ public class ProcessingCommandMailbox {
     private ConcurrentHashMap<Long, ProcessingCommand> messageDict;
     private IProcessingCommandHandler messageHandler;
     private int batchSize;
+
     private String aggregateRootId;
+    private Date lastActiveTime;
     private boolean isRunning;
     private boolean isPauseRequested;
     private boolean isPaused;
-    private long consumingSequence;
     private long nextSequence;
-    private Date lastActiveTime;
+    private long consumingSequence;
 
     public ProcessingCommandMailbox(String aggregateRootId, IProcessingCommandHandler messageHandler, int batchSize) {
         this.messageDict = new ConcurrentHashMap<>();

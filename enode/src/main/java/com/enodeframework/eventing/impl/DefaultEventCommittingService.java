@@ -32,13 +32,11 @@ import java.util.stream.Collectors;
 /**
  * @author anruence@gmail.com
  */
-public class EventCommittingService implements IEventCommittingService {
-    private static final Logger logger = LoggerFactory.getLogger(EventCommittingService.class);
-    private int timeoutSeconds;
-    private String taskName;
+public class DefaultEventCommittingService implements IEventCommittingService {
+    private static final Logger logger = LoggerFactory.getLogger(DefaultEventCommittingService.class);
     private int eventMailBoxCount;
-    private int scanExpiredAggregateIntervalMilliseconds = 5000;
     private List<EventCommittingContextMailBox> eventCommittingContextMailBoxList;
+
     @Autowired
     private IMemoryCache memoryCache;
     @Autowired
@@ -46,11 +44,11 @@ public class EventCommittingService implements IEventCommittingService {
     @Autowired
     private IMessagePublisher<DomainEventStreamMessage> domainEventPublisher;
 
-    public EventCommittingService() {
+    public DefaultEventCommittingService() {
         this(1000, 4);
     }
 
-    public EventCommittingService(int eventMailBoxPersistenceMaxBatchSize, int eventMailBoxCount) {
+    public DefaultEventCommittingService(int eventMailBoxPersistenceMaxBatchSize, int eventMailBoxCount) {
         this.eventCommittingContextMailBoxList = new ArrayList<>();
         this.eventMailBoxCount = eventMailBoxCount;
         for (int i = 0; i < eventMailBoxCount; i++) {
@@ -59,17 +57,17 @@ public class EventCommittingService implements IEventCommittingService {
         }
     }
 
-    public EventCommittingService setMemoryCache(IMemoryCache memoryCache) {
+    public DefaultEventCommittingService setMemoryCache(IMemoryCache memoryCache) {
         this.memoryCache = memoryCache;
         return this;
     }
 
-    public EventCommittingService setEventStore(IEventStore eventStore) {
+    public DefaultEventCommittingService setEventStore(IEventStore eventStore) {
         this.eventStore = eventStore;
         return this;
     }
 
-    public EventCommittingService setDomainEventPublisher(IMessagePublisher<DomainEventStreamMessage> domainEventPublisher) {
+    public DefaultEventCommittingService setDomainEventPublisher(IMessagePublisher<DomainEventStreamMessage> domainEventPublisher) {
         this.domainEventPublisher = domainEventPublisher;
         return this;
     }
@@ -114,8 +112,7 @@ public class EventCommittingService implements IEventCommittingService {
     private void batchPersistEventAsync(List<EventCommittingContext> committingContexts, int retryTimes) {
         IOHelper.tryAsyncActionRecursively("BatchPersistEventAsync",
                 () -> eventStore.batchAppendAsync(committingContexts.stream().map(EventCommittingContext::getEventStream).collect(Collectors.toList())),
-                result ->
-                {
+                result -> {
                     EventCommittingContextMailBox eventMailBox = Linq.first(committingContexts).getMailBox();
                     EventAppendResult appendResult = result.getData();
                     //针对持久化成功的聚合根，发布这些聚合根的事件到Q端
@@ -191,22 +188,12 @@ public class EventCommittingService implements IEventCommittingService {
         }
     }
 
-    private void processDuplicateEvent(EventCommittingContext eventCommittingContext) {
-        if (eventCommittingContext.getEventStream().getVersion() == 1) {
-            handleFirstEventDuplicationAsync(eventCommittingContext, 0);
-        } else {
-            resetCommandMailBoxConsumingSequence(eventCommittingContext, eventCommittingContext.getProcessingCommand().getSequence());
-        }
-    }
-
     private CompletableFuture<Void> resetCommandMailBoxConsumingSequence(EventCommittingContext context, long consumingSequence) {
         ProcessingCommand processingCommand = context.getProcessingCommand();
         ICommand command = processingCommand.getMessage();
-
         ProcessingCommandMailbox commandMailBox = processingCommand.getMailBox();
         EventCommittingContextMailBox eventMailBox = context.getMailBox();
         String aggregateRootId = context.getEventStream().getAggregateRootId();
-
         commandMailBox.pause();
         eventMailBox.removeAggregateAllEventCommittingContexts(aggregateRootId);
         CompletableFuture<Void> future = new CompletableFuture<>();
@@ -232,8 +219,7 @@ public class EventCommittingService implements IEventCommittingService {
         ICommand command = context.getProcessingCommand().getMessage();
         IOHelper.tryAsyncActionRecursively("FindEventByCommandIdAsync",
                 () -> eventStore.findAsync(context.getEventStream().getAggregateRootId(), command.getId()),
-                result ->
-                {
+                result -> {
                     DomainEventStream existingEventStream = result.getData();
                     if (existingEventStream != null) {
                         //这里，我们需要再重新做一遍发布事件这个操作；
@@ -254,8 +240,7 @@ public class EventCommittingService implements IEventCommittingService {
                     }
                 },
                 () -> String.format("[aggregateRootId:%s, commandId:%s]", command.getAggregateRootId(), command.getId()),
-                errorMessage ->
-                {
+                errorMessage -> {
                     logger.error(String.format("Find event by commandId has unknown exception, the code should not be run to here, errorMessage: %s", errorMessage));
                 },
                 retryTimes, true);

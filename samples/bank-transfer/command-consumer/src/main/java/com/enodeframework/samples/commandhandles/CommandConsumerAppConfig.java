@@ -3,7 +3,7 @@ package com.enodeframework.samples.commandhandles;
 import com.enodeframework.ENodeBootstrap;
 import com.enodeframework.commanding.impl.DefaultCommandProcessor;
 import com.enodeframework.commanding.impl.DefaultProcessingCommandHandler;
-import com.enodeframework.eventing.impl.EventCommittingService;
+import com.enodeframework.eventing.impl.DefaultEventCommittingService;
 import com.enodeframework.eventing.impl.InMemoryEventStore;
 import com.enodeframework.infrastructure.impl.InMemoryPublishedVersionStore;
 import com.google.common.collect.Lists;
@@ -24,8 +24,8 @@ public class CommandConsumerAppConfig {
     }
 
     @Bean
-    public EventCommittingService defaultEventService() {
-        return new EventCommittingService();
+    public DefaultEventCommittingService defaultEventService() {
+        return new DefaultEventCommittingService();
     }
 
     @Bean(initMethod = "start", destroyMethod = "stop")

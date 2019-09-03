@@ -62,7 +62,6 @@ public class EventCommittingContextMailBox {
      */
     public void enqueueMessage(EventCommittingContext message) {
         synchronized (lockObj) {
-
             ConcurrentHashMap<String, Byte> eventDict = aggregateDictDict.computeIfAbsent(message.getEventStream().getAggregateRootId(), x -> new ConcurrentHashMap<>());
             // If the specified key is not already associated with a value (or is mapped to null) associates it with the given value and returns null, else returns the current value.
             if (eventDict.putIfAbsent(message.getEventStream().getId(), ONE_BYTE) == null) {
@@ -132,7 +131,7 @@ public class EventCommittingContextMailBox {
                 if (message != null) {
                     ConcurrentHashMap<String, Byte> eventDict = aggregateDictDict.getOrDefault(message.getEventStream().getAggregateRootId(), null);
                     if (eventDict != null) {
-                        if (eventDict.remove(message.getEventStream().getAggregateRootId()) != null) {
+                        if (eventDict.remove(message.getEventStream().getId()) != null) {
                             messageList.add(message);
                         }
                     }

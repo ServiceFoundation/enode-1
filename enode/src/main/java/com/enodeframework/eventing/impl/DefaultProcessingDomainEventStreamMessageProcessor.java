@@ -63,7 +63,10 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
             throw new ArgumentException("aggregateRootId of domain event stream cannot be null or empty, domainEventStreamId:" + processingMessage.getMessage().getId());
         }
         synchronized (lockObj) {
-            ProcessingDomainEventStreamMessageMailBox mailbox = mailboxDict.computeIfAbsent(aggregateRootId, key -> new ProcessingDomainEventStreamMessageMailBox(aggregateRootId, 0, y -> dispatchProcessingMessageAsync(y, 0)));
+            ProcessingDomainEventStreamMessageMailBox mailbox = mailboxDict.computeIfAbsent(aggregateRootId, key -> {
+                int latestHandledEventVersion = getAggregateRootLatestHandledEventVersion(processingMessage.getMessage().getAggregateRootTypeName(), aggregateRootId);
+                return new ProcessingDomainEventStreamMessageMailBox(aggregateRootId, latestHandledEventVersion, y -> dispatchProcessingMessageAsync(y, 0));
+            });
             mailbox.enqueueMessage(processingMessage);
         }
     }

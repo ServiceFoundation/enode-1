@@ -13,9 +13,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 public class ProcessingDomainEventStreamMessageMailBox {
-
+    private final static Logger logger = LoggerFactory.getLogger(ProcessingDomainEventStreamMessageMailBox.class);
     private final Object lockObj = new Object();
-    public Logger logger = LoggerFactory.getLogger(ProcessingDomainEventStreamMessageMailBox.class);
     private String aggregateRootId;
     private Date lastActiveTime;
     private boolean running;
@@ -30,6 +29,7 @@ public class ProcessingDomainEventStreamMessageMailBox {
         this.aggregateRootId = aggregateRootId;
         this.latestHandledEventVersion = latestHandledEventVersion;
         this.handleMessageAction = handleMessageAction;
+
         lastActiveTime = new Date();
     }
 
@@ -72,11 +72,11 @@ public class ProcessingDomainEventStreamMessageMailBox {
                 }
                 latestHandledEventVersion = eventStream.getVersion();
                 int nextVersion = eventStream.getVersion() + 1;
-                ProcessingDomainEventStreamMessage nextMessage = waitingMessageDict.remove(nextVersion);
-                if (nextMessage != null) {
+                while (waitingMessageDict.containsKey(nextVersion)) {
+                    ProcessingDomainEventStreamMessage nextMessage = waitingMessageDict.remove(nextVersion);
                     DomainEventStreamMessage nextEventStream = nextMessage.getMessage();
                     nextMessage.setMailbox(this);
-                    messageQueue.offer(nextMessage);
+                    messageQueue.add(nextMessage);
                     latestHandledEventVersion = nextEventStream.getVersion();
                     if (logger.isDebugEnabled()) {
                         logger.debug("{} enqueued new message, aggregateRootType: {}, aggregateRootId: {}, commandId: {}, eventVersion: {}, eventStreamId: {}, eventTypes: {}, eventIds: {}",
@@ -90,10 +90,10 @@ public class ProcessingDomainEventStreamMessageMailBox {
                                 String.join("|", eventStream.getEvents().stream().map(x -> x.getId()).collect(Collectors.toList()))
                         );
                     }
-
-                    lastActiveTime = new Date();
-                    tryRun();
+                    nextVersion++;
                 }
+                lastActiveTime = new Date();
+                tryRun();
             } else if (eventStream.getVersion() > getLatestHandledEventVersion() + 1) {
                 waitingMessageDict.put(eventStream.getVersion(), message);
             }
@@ -138,10 +138,8 @@ public class ProcessingDomainEventStreamMessageMailBox {
         ProcessingDomainEventStreamMessage message = messageQueue.poll();
         if (message != null) {
             lastActiveTime = new Date();
-
             try {
                 handleMessageAction.apply(message);
-
             } catch (Exception ex) {
                 logger.error("{} run has unknown exception, aggregateRootId: {}", getClass().getName(), aggregateRootId, ex);
                 Task.sleep(1);
