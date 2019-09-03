@@ -1,6 +1,6 @@
 package com.enodeframework.applicationmessage;
 
-import com.enodeframework.infrastructure.IMessageProcessContext;
+import com.enodeframework.messaging.IMessageProcessContext;
 
 /**
  * @author anruence@gmail.com

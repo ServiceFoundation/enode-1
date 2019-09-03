@@ -2,7 +2,7 @@ package com.enodeframework.eventing;
 
 import com.enodeframework.common.function.Action1;
 import com.enodeframework.common.io.Task;
-import com.enodeframework.infrastructure.IMessage;
+import com.enodeframework.messaging.IMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

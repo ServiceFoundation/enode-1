@@ -2,7 +2,7 @@ package com.microsoft.conference.payments.messagepublishers;
 
 import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.common.io.AsyncTaskResult;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import com.enodeframework.messaging.IMessagePublisher;
 import com.microsoft.conference.common.payment.message.PaymentCompletedMessage;
 import com.microsoft.conference.common.payment.message.PaymentRejectedMessage;
 import com.microsoft.conference.payments.domain.Events.PaymentCompleted;

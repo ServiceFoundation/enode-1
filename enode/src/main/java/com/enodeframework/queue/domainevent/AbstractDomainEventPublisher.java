@@ -4,7 +4,7 @@ import com.enodeframework.common.serializing.JsonTool;
 import com.enodeframework.common.utilities.Ensure;
 import com.enodeframework.eventing.DomainEventStreamMessage;
 import com.enodeframework.eventing.IEventSerializer;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import com.enodeframework.messaging.IMessagePublisher;
 import com.enodeframework.queue.QueueMessage;
 import com.enodeframework.queue.QueueMessageTypeCode;
 import com.enodeframework.queue.TopicData;

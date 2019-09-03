@@ -16,7 +16,7 @@ import com.enodeframework.eventing.EventCommittingContext;
 import com.enodeframework.eventing.EventCommittingContextMailBox;
 import com.enodeframework.eventing.IEventCommittingService;
 import com.enodeframework.eventing.IEventStore;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import com.enodeframework.messaging.IMessagePublisher;
 import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

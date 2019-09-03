@@ -1,6 +1,6 @@
 package com.enodeframework.eventing;
 
-import com.enodeframework.infrastructure.Message;
+import com.enodeframework.messaging.Message;
 
 /**
  * Represents an abstract generic domain event.

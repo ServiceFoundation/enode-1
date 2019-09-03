@@ -1,6 +1,6 @@
 package com.enodeframework.eventing;
 
-import com.enodeframework.infrastructure.IMessage;
+import com.enodeframework.messaging.IMessage;
 
 public interface IDomainEvent<TAggregateRootId> extends IMessage {
     TAggregateRootId getAggregateRootId();

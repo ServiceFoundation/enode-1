@@ -3,7 +3,7 @@ package com.enodeframework.queue.applicationmessage;
 import com.enodeframework.applicationmessage.IApplicationMessage;
 import com.enodeframework.common.serializing.JsonTool;
 import com.enodeframework.common.utilities.Ensure;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import com.enodeframework.messaging.IMessagePublisher;
 import com.enodeframework.queue.QueueMessage;
 import com.enodeframework.queue.QueueMessageTypeCode;
 import com.enodeframework.queue.TopicData;

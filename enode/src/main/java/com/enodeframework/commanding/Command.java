@@ -1,6 +1,6 @@
 package com.enodeframework.commanding;
 
-import com.enodeframework.infrastructure.Message;
+import com.enodeframework.messaging.Message;
 
 /**
  * @author anruence@gmail.com

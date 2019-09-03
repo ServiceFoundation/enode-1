@@ -1,6 +1,6 @@
 package com.enodeframework.samples.domain.bank.bankaccount;
 
-import com.enodeframework.infrastructure.PublishableException;
+import com.enodeframework.publishableexception.PublishableException;
 
 import java.util.Map;
 

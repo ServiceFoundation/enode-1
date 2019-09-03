@@ -2,7 +2,7 @@ package com.enodeframework.eventing;
 
 import com.enodeframework.common.function.Action1;
 import com.enodeframework.common.io.Task;
-import com.enodeframework.infrastructure.ProcessingDomainEventStreamMessage;
+import com.enodeframework.messaging.IMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,14 +22,12 @@ public class ProcessingDomainEventStreamMessageMailBox {
     private ConcurrentHashMap<Integer, ProcessingDomainEventStreamMessage> waitingMessageDict = new ConcurrentHashMap<>();
     private ConcurrentLinkedQueue<ProcessingDomainEventStreamMessage> messageQueue;
     private Action1<ProcessingDomainEventStreamMessage> handleMessageAction;
-    private int batchSize;
 
     public ProcessingDomainEventStreamMessageMailBox(String aggregateRootId, int latestHandledEventVersion, Action1<ProcessingDomainEventStreamMessage> handleMessageAction) {
         messageQueue = new ConcurrentLinkedQueue<>();
         this.aggregateRootId = aggregateRootId;
         this.latestHandledEventVersion = latestHandledEventVersion;
         this.handleMessageAction = handleMessageAction;
-
         lastActiveTime = new Date();
     }
 
@@ -66,8 +64,8 @@ public class ProcessingDomainEventStreamMessageMailBox {
                             eventStream.getCommandId(),
                             eventStream.getVersion(),
                             eventStream.getId(),
-                            String.join("|", eventStream.getEvents().stream().map(x -> x.getClass().getName()).collect(Collectors.toList())),
-                            String.join("|", eventStream.getEvents().stream().map(x -> x.getId()).collect(Collectors.toList()))
+                            eventStream.getEvents().stream().map(x -> x.getClass().getName()).collect(Collectors.joining("|")),
+                            eventStream.getEvents().stream().map(IMessage::getId).collect(Collectors.joining("|"))
                     );
                 }
                 latestHandledEventVersion = eventStream.getVersion();
@@ -86,8 +84,8 @@ public class ProcessingDomainEventStreamMessageMailBox {
                                 nextEventStream.getCommandId(),
                                 nextEventStream.getVersion(),
                                 nextEventStream.getId(),
-                                String.join("|", eventStream.getEvents().stream().map(x -> x.getClass().getName()).collect(Collectors.toList())),
-                                String.join("|", eventStream.getEvents().stream().map(x -> x.getId()).collect(Collectors.toList()))
+                                eventStream.getEvents().stream().map(x -> x.getClass().getName()).collect(Collectors.joining("|")),
+                                eventStream.getEvents().stream().map(IMessage::getId).collect(Collectors.joining("|"))
                         );
                     }
                     nextVersion++;

@@ -1,6 +1,6 @@
 package com.enodeframework.eventing;
 
-import com.enodeframework.infrastructure.Message;
+import com.enodeframework.messaging.Message;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 

@@ -1,6 +1,6 @@
 package com.enodeframework.applicationmessage;
 
-import com.enodeframework.infrastructure.IMessage;
+import com.enodeframework.messaging.IMessage;
 
 /**
  * Represents an application message.

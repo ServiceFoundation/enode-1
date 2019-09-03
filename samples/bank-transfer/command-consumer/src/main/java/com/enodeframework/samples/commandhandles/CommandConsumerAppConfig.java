@@ -5,7 +5,7 @@ import com.enodeframework.commanding.impl.DefaultCommandProcessor;
 import com.enodeframework.commanding.impl.DefaultProcessingCommandHandler;
 import com.enodeframework.eventing.impl.DefaultEventCommittingService;
 import com.enodeframework.eventing.impl.InMemoryEventStore;
-import com.enodeframework.infrastructure.impl.InMemoryPublishedVersionStore;
+import com.enodeframework.eventing.impl.InMemoryPublishedVersionStore;
 import com.google.common.collect.Lists;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.context.annotation.Bean;
