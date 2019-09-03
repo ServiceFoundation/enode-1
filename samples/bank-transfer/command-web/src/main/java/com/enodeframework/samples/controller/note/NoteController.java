@@ -35,10 +35,10 @@ public class NoteController {
         }
         AsyncTaskResult<CommandResult> asyncTaskResult = commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
         Assert.notNull(asyncTaskResult, "asyncTaskResult");
-//        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
-//        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
-//        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
-//        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
+        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
+        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
+        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
+        commandService.executeAsync(createNoteCommand, CommandReturnType.EventHandled).join();
         ChangeNoteTitleCommand titleCommand = new ChangeNoteTitleCommand(noteId, title + " change");
         // always block here
         return Task.get(commandService.executeAsync(titleCommand, CommandReturnType.EventHandled));

@@ -164,7 +164,7 @@ public class DefaultEventCommittingService implements IEventCommittingService {
                                 appendResult.getDuplicateEventAggregateRootIdList().size(),
                                 JsonTool.serialize(appendResult.getDuplicateEventAggregateRootIdList()));
 
-                        for (String aggregateRootId : appendResult.getDuplicateCommandIdList()) {
+                        for (String aggregateRootId : appendResult.getDuplicateEventAggregateRootIdList()) {
                             Optional<EventCommittingContext> committingContextOptional = committingContexts.stream().filter(x -> x.getEventStream().getAggregateRootId().equals(aggregateRootId)).findFirst();
                             if (committingContextOptional.isPresent()) {
                                 EventCommittingContext context = committingContextOptional.get();
