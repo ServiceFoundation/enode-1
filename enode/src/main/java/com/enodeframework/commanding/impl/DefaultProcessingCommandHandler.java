@@ -186,7 +186,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                             command.getClass().getName(),
                             command.getId());
                     logger.error(errorMessage);
-                    completeCommand(processingCommand, CommandStatus.Failed, String.class.getName(), errorMessage).join();
+                    completeCommand(processingCommand, CommandStatus.Failed, String.class.getName(), errorMessage);
                     return;
                 }
                 dirtyAggregateRoot = aggregateRoot;
