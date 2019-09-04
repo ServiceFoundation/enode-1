@@ -71,7 +71,7 @@ public class InMemoryEventStore implements IEventStore {
     }
 
     private DomainEventStream find(String aggregateRootId, int version) {
-        AggregateInfo aggregateInfo = aggregateInfoDict.get(aggregateRootId);
+        AggregateInfo aggregateInfo = aggregateInfoDict.getOrDefault(aggregateRootId, null);
         if (aggregateInfo == null) {
             return null;
         }
@@ -79,7 +79,7 @@ public class InMemoryEventStore implements IEventStore {
     }
 
     private DomainEventStream find(String aggregateRootId, String commandId) {
-        AggregateInfo aggregateInfo = aggregateInfoDict.get(aggregateRootId);
+        AggregateInfo aggregateInfo = aggregateInfoDict.getOrDefault(aggregateRootId, null);
         if (aggregateInfo == null) {
             return null;
         }
@@ -142,14 +142,6 @@ public class InMemoryEventStore implements IEventStore {
         public AggregateInfo() {
             this.eventDict = new ConcurrentHashMap<>();
             this.commandDict = new ConcurrentHashMap<>();
-        }
-
-        public boolean tryEnterEditing() {
-            return status.compareAndSet(UNEDITING, EDITING);
-        }
-
-        public void exitEditing() {
-            status.getAndSet(UNEDITING);
         }
 
         public int getCurrentVersion() {

@@ -31,9 +31,15 @@ public class CommandHandlerProxy implements ICommandHandlerProxy {
 
     @Override
     public CompletableFuture<Void> handleAsync(ICommandContext context, ICommand command) {
-        Object result = handle(context, command);
-        if (result instanceof CompletableFuture) {
-            return (CompletableFuture<Void>) result;
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        try {
+            Object result = handle(context, command);
+            if (result instanceof CompletableFuture) {
+                return (CompletableFuture<Void>) result;
+            }
+        } catch (Exception e) {
+            future.completeExceptionally(e);
+            return future;
         }
         return Task.completedTask;
     }

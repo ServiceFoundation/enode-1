@@ -128,7 +128,7 @@ public class DefaultEventCommittingService implements IEventCommittingService {
                             logger.debug("Batch persist events, mailboxNumber: {}, succeedAggregateRootCount: {}, detailEventStreamCount: {}",
                                     eventMailBox.getNumber(),
                                     appendResult.getSuccessAggregateRootIdList().size(),
-                                    JsonTool.serialize(successCommittedContextDict));
+                                    successCommittedContextDict.size());
                         }
 
                         CompletableFuture.runAsync(() -> {
