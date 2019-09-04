@@ -66,7 +66,7 @@ public class EventCommittingContextMailBox {
             // If the specified key is not already associated with a value (or is mapped to null) associates it with the given value and returns null, else returns the current value.
             if (eventDict.putIfAbsent(message.getEventStream().getId(), ONE_BYTE) == null) {
                 message.setMailBox(this);
-                messageQueue.offer(message);
+                messageQueue.add(message);
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} enqueued new message, mailboxNumber: {}, aggregateRootId: {}, commandId: {}, eventVersion: {}, eventStreamId: {}, eventIds: {}",
                             getClass().getName(),

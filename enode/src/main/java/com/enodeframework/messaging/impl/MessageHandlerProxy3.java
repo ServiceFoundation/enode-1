@@ -52,8 +52,6 @@ public class MessageHandlerProxy3 implements IMessageHandlerProxy3 {
             future.completeExceptionally(throwable);
         }
         return future;
-
-
     }
 
     private int getMessageParameterIndex(List<Class<?>> methodParameterTypes, IMessage message) {

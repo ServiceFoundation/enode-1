@@ -47,15 +47,12 @@ public class ProcessingDomainEventStreamMessageMailBox {
         return messageQueue.size();
     }
 
-    /**
-     * 放入一个消息到MailBox，并自动尝试运行MailBox
-     */
     public void enqueueMessage(ProcessingDomainEventStreamMessage message) {
         synchronized (lockObj) {
             DomainEventStreamMessage eventStream = message.getMessage();
             if (eventStream.getVersion() == getLatestHandledEventVersion() + 1) {
                 message.setMailbox(this);
-                messageQueue.offer(message);
+                messageQueue.add(message);
                 if (logger.isDebugEnabled()) {
                     logger.debug("{} enqueued new message, aggregateRootType: {}, aggregateRootId: {}, commandId: {}, eventVersion: {}, eventStreamId: {}, eventTypes: {}, eventIds: {}",
                             getClass().getName(),
@@ -85,8 +82,7 @@ public class ProcessingDomainEventStreamMessageMailBox {
                                 nextEventStream.getVersion(),
                                 nextEventStream.getId(),
                                 eventStream.getEvents().stream().map(x -> x.getClass().getName()).collect(Collectors.joining("|")),
-                                eventStream.getEvents().stream().map(IMessage::getId).collect(Collectors.joining("|"))
-                        );
+                                eventStream.getEvents().stream().map(IMessage::getId).collect(Collectors.joining("|")));
                     }
                     nextVersion++;
                 }

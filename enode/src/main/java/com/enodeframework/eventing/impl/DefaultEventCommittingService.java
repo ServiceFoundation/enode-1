@@ -17,7 +17,6 @@ import com.enodeframework.eventing.EventCommittingContextMailBox;
 import com.enodeframework.eventing.IEventCommittingService;
 import com.enodeframework.eventing.IEventStore;
 import com.enodeframework.messaging.IMessagePublisher;
-import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,18 +116,14 @@ public class DefaultEventCommittingService implements IEventCommittingService {
                     EventAppendResult appendResult = result.getData();
                     //针对持久化成功的聚合根，发布这些聚合根的事件到Q端
                     if (appendResult.getSuccessAggregateRootIdList().size() > 0) {
-                        Map<String, List<EventCommittingContext>> successCommittedContextDict = Maps.newHashMap();
-                        for (String aggregateRootId : appendResult.getSuccessAggregateRootIdList()) {
-                            List<EventCommittingContext> contextList = committingContexts.stream().filter(x -> x.getEventStream().getAggregateRootId().equals(aggregateRootId)).collect(Collectors.toList());
-                            if (contextList.size() > 0) {
-                                successCommittedContextDict.put(aggregateRootId, contextList);
-                            }
-                        }
+                        Map<String, List<EventCommittingContext>> successCommittedContextDict = committingContexts.stream()
+                                .filter(x -> appendResult.getSuccessAggregateRootIdList().contains(x.getEventStream().getAggregateRootId()))
+                                .collect(Collectors.groupingBy(x -> x.getEventStream().getAggregateRootId()));
                         if (logger.isDebugEnabled()) {
-                            logger.debug("Batch persist events, mailboxNumber: {}, succeedAggregateRootCount: {}, detailEventStreamCount: {}",
+                            logger.debug("Batch persist events, mailboxNumber: {}, succeedAggregateRootCount: {}, detail: {}",
                                     eventMailBox.getNumber(),
                                     appendResult.getSuccessAggregateRootIdList().size(),
-                                    successCommittedContextDict.size());
+                                    JsonTool.serialize(appendResult.getSuccessAggregateRootIdList()));
                         }
 
                         CompletableFuture.runAsync(() -> {
