@@ -4,9 +4,7 @@ import com.enodeframework.commanding.ICommand;
 import com.enodeframework.commanding.ICommandContext;
 import com.enodeframework.commanding.ICommandHandlerProxy;
 import com.enodeframework.common.container.IObjectContainer;
-import com.enodeframework.common.exception.ENodeRuntimeException;
 import com.enodeframework.common.exception.IORuntimeException;
-import com.enodeframework.common.io.Task;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.invoke.MethodHandle;
@@ -17,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
  * @author anruence@gmail.com
  */
 public class CommandHandlerProxy implements ICommandHandlerProxy {
+
     @Autowired
     private IObjectContainer objectContainer;
     private Class handlerType;
@@ -33,26 +32,18 @@ public class CommandHandlerProxy implements ICommandHandlerProxy {
     public CompletableFuture<Void> handleAsync(ICommandContext context, ICommand command) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         try {
-            Object result = handle(context, command);
+            Object result = methodHandle.invoke(getInnerObject(), context, command);
             if (result instanceof CompletableFuture) {
                 return (CompletableFuture<Void>) result;
             }
-        } catch (Exception e) {
-            future.completeExceptionally(e);
-            return future;
-        }
-        return Task.completedTask;
-    }
-
-    public Object handle(ICommandContext context, ICommand command) {
-        try {
-            return methodHandle.invoke(getInnerObject(), context, command);
+            future.complete(null);
         } catch (Throwable throwable) {
-            if (throwable instanceof IORuntimeException || throwable.getCause() instanceof IORuntimeException) {
-                throw new IORuntimeException(throwable);
+            if (throwable.getCause() instanceof IORuntimeException) {
+                throwable = new IORuntimeException(throwable);
             }
-            throw new ENodeRuntimeException(throwable);
+            future.completeExceptionally(throwable);
         }
+        return future;
     }
 
     @Override
