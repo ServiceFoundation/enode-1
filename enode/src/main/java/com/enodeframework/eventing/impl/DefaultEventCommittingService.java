@@ -33,7 +33,9 @@ import java.util.stream.Collectors;
  */
 public class DefaultEventCommittingService implements IEventCommittingService {
     private static final Logger logger = LoggerFactory.getLogger(DefaultEventCommittingService.class);
+
     private int eventMailBoxCount;
+
     private List<EventCommittingContextMailBox> eventCommittingContextMailBoxList;
 
     @Autowired
@@ -78,6 +80,21 @@ public class DefaultEventCommittingService implements IEventCommittingService {
         eventMailbox.enqueueMessage(eventCommittingContext);
     }
 
+    @Override
+    public void publishDomainEventAsync(ProcessingCommand processingCommand, DomainEventStream eventStream) {
+        if (eventStream.getItems() == null || eventStream.getItems().size() == 0) {
+            eventStream.setItems(processingCommand.getItems());
+        }
+        DomainEventStreamMessage eventStreamMessage = new DomainEventStreamMessage(
+                processingCommand.getMessage().getId(),
+                eventStream.getAggregateRootId(),
+                eventStream.getVersion(),
+                eventStream.getAggregateRootTypeName(),
+                eventStream.events(),
+                eventStream.getItems());
+        publishDomainEventAsync(processingCommand, eventStreamMessage, 0);
+    }
+
     private int getEventMailBoxIndex(String aggregateRootId) {
         int hash = 23;
         for (char c : aggregateRootId.toCharArray()) {
@@ -94,18 +111,6 @@ public class DefaultEventCommittingService implements IEventCommittingService {
             return;
         }
         batchPersistEventAsync(committingContexts, 0);
-    }
-
-
-    @Override
-    public void publishDomainEventAsync(ProcessingCommand processingCommand, DomainEventStream eventStream) {
-        if (eventStream.getItems() == null || eventStream.getItems().size() == 0) {
-            eventStream.setItems(processingCommand.getItems());
-        }
-        DomainEventStreamMessage eventStreamMessage = new DomainEventStreamMessage(
-                processingCommand.getMessage().getId(), eventStream.getAggregateRootId(), eventStream.getVersion(),
-                eventStream.getAggregateRootTypeName(), eventStream.events(), eventStream.getItems());
-        publishDomainEventAsync(processingCommand, eventStreamMessage, 0);
     }
 
     private void batchPersistEventAsync(List<EventCommittingContext> committingContexts, int retryTimes) {
@@ -184,15 +189,13 @@ public class DefaultEventCommittingService implements IEventCommittingService {
     }
 
     private CompletableFuture<Void> resetCommandMailBoxConsumingSequence(EventCommittingContext context, long consumingSequence) {
-        ProcessingCommand processingCommand = context.getProcessingCommand();
-        ICommand command = processingCommand.getMessage();
-        ProcessingCommandMailbox commandMailBox = processingCommand.getMailBox();
+        ProcessingCommandMailbox commandMailBox = context.getProcessingCommand().getMailBox();
         EventCommittingContextMailBox eventMailBox = context.getMailBox();
         String aggregateRootId = context.getEventStream().getAggregateRootId();
         commandMailBox.pause();
-        eventMailBox.removeAggregateAllEventCommittingContexts(aggregateRootId);
         CompletableFuture<Void> future = new CompletableFuture<>();
         try {
+            eventMailBox.removeAggregateAllEventCommittingContexts(aggregateRootId);
             future = memoryCache.refreshAggregateFromEventStoreAsync(context.getEventStream().getAggregateRootTypeName(), aggregateRootId).thenAccept(x -> {
                 try {
                     commandMailBox.resetConsumingSequence(consumingSequence);
@@ -205,7 +208,7 @@ public class DefaultEventCommittingService implements IEventCommittingService {
             future.completeExceptionally(ex);
         }
         return future.exceptionally(ex -> {
-            logger.error("ResetCommandMailBoxConsumingSequence has unknown exception, commandId: {}, aggregateRootId: {}", command.getId(), command.getAggregateRootId(), ex);
+            logger.error("ResetCommandMailBoxConsumingSequence has unknown exception, aggregateRootId: {}", aggregateRootId, ex);
             return null;
         });
     }
@@ -302,7 +305,7 @@ public class DefaultEventCommittingService implements IEventCommittingService {
                 retryTimes, true);
     }
 
-    private void completeCommand(ProcessingCommand processingCommand, CommandResult commandResult) {
-        processingCommand.getMailBox().completeMessage(processingCommand, commandResult);
+    private CompletableFuture<Void> completeCommand(ProcessingCommand processingCommand, CommandResult commandResult) {
+        return processingCommand.getMailBox().completeMessage(processingCommand, commandResult);
     }
 }

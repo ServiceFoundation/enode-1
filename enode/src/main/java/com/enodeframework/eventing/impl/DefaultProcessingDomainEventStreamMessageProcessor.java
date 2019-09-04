@@ -7,11 +7,11 @@ import com.enodeframework.common.io.AsyncTaskStatus;
 import com.enodeframework.common.io.IOHelper;
 import com.enodeframework.common.scheduling.IScheduleService;
 import com.enodeframework.eventing.DomainEventStreamMessage;
-import com.enodeframework.eventing.ProcessingDomainEventStreamMessageMailBox;
-import com.enodeframework.messaging.IMessageDispatcher;
 import com.enodeframework.eventing.IProcessingDomainEventStreamMessageProcessor;
 import com.enodeframework.eventing.IPublishedVersionStore;
 import com.enodeframework.eventing.ProcessingDomainEventStreamMessage;
+import com.enodeframework.eventing.ProcessingDomainEventStreamMessageMailBox;
+import com.enodeframework.messaging.IMessageDispatcher;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +30,16 @@ import java.util.stream.Collectors;
  */
 public class DefaultProcessingDomainEventStreamMessageProcessor implements IProcessingDomainEventStreamMessageProcessor {
     private static final Logger logger = LoggerFactory.getLogger(DefaultProcessingDomainEventStreamMessageProcessor.class);
+
     private int timeoutSeconds = 3600 * 24 * 3;
+
     private int scanExpiredAggregateIntervalMilliseconds = 5000;
-    private Object lockObj = new Object();
+
+    private final Object lockObj = new Object();
 
     private String taskName;
-    private String processorName;
 
+    private String processorName = "DefaultEventProcessor";
 
     private ConcurrentMap<String, ProcessingDomainEventStreamMessageMailBox> mailboxDict;
     @Autowired
@@ -48,7 +51,6 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
     @Autowired
     private IPublishedVersionStore publishedVersionStore;
 
-
     public DefaultProcessingDomainEventStreamMessageProcessor() {
         mailboxDict = new ConcurrentHashMap<>();
         taskName = "CleanInactiveProcessingDomainEventStreamMessageMailBoxes_" + System.nanoTime() + new Random().nextInt(10000);
@@ -57,7 +59,6 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
 
     @Override
     public void process(ProcessingDomainEventStreamMessage processingMessage) {
-
         String aggregateRootId = processingMessage.getMessage().getAggregateRootId();
         if (Strings.isNullOrEmpty(aggregateRootId)) {
             throw new ArgumentException("aggregateRootId of domain event stream cannot be null or empty, domainEventStreamId:" + processingMessage.getMessage().getId());
@@ -81,9 +82,7 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
         scheduleService.stopTask(taskName);
     }
 
-
     private void dispatchProcessingMessageAsync(ProcessingDomainEventStreamMessage processingMessage, int retryTimes) {
-
         IOHelper.tryAsyncActionRecursively("DispatchProcessingMessageAsync",
                 () -> dispatcher.dispatchMessagesAsync(processingMessage.getMessage().getEvents()),
                 result -> {
@@ -94,25 +93,6 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
                     logger.error("Dispatching message has unknown exception, the code should not be run to here, errorMessage: {}", errorMessage);
                 },
                 retryTimes, true);
-    }
-
-    private void cleanInactiveMailbox() {
-        List<Map.Entry<String, ProcessingDomainEventStreamMessageMailBox>> inactiveList = mailboxDict.entrySet().stream()
-                .filter(entry -> entry.getValue().isInactive(timeoutSeconds)
-                        && !entry.getValue().isRunning()
-                        && entry.getValue().getTotalUnHandledMessageCount() == 0)
-                .collect(Collectors.toList());
-        inactiveList.forEach(entry -> {
-            synchronized (lockObj) {
-                if (entry.getValue().isInactive(timeoutSeconds)
-                        && !entry.getValue().isRunning()
-                        && entry.getValue().getTotalUnHandledMessageCount() == 0) {
-                    if (mailboxDict.remove(entry.getKey()) != null) {
-                        logger.info("Removed inactive domain event stream mailbox, aggregateRootId: {}", entry.getKey());
-                    }
-                }
-            }
-        });
     }
 
     private int getAggregateRootLatestHandledEventVersion(String aggregateRootType, String aggregateRootId) {
@@ -140,5 +120,25 @@ public class DefaultProcessingDomainEventStreamMessageProcessor implements IProc
                 errorMessage -> {
                     logger.error("Update published version has unknown exception, the code should not be run to here, errorMessage: {}", errorMessage);
                 }, retryTimes, true);
+    }
+
+
+    private void cleanInactiveMailbox() {
+        List<Map.Entry<String, ProcessingDomainEventStreamMessageMailBox>> inactiveList = mailboxDict.entrySet().stream()
+                .filter(entry -> entry.getValue().isInactive(timeoutSeconds)
+                        && !entry.getValue().isRunning()
+                        && entry.getValue().getTotalUnHandledMessageCount() == 0)
+                .collect(Collectors.toList());
+        inactiveList.forEach(entry -> {
+            synchronized (lockObj) {
+                if (entry.getValue().isInactive(timeoutSeconds)
+                        && !entry.getValue().isRunning()
+                        && entry.getValue().getTotalUnHandledMessageCount() == 0) {
+                    if (mailboxDict.remove(entry.getKey()) != null) {
+                        logger.info("Removed inactive domain event stream mailbox, aggregateRootId: {}", entry.getKey());
+                    }
+                }
+            }
+        });
     }
 }

@@ -80,13 +80,9 @@ public abstract class AggregateRoot<TAggregateRootId> implements IAggregateRoot 
             throw new ENodeRuntimeException(String.format("Could not find event handler for [%s] of [%s]", domainEvent.getClass().getName(), getClass().getName()));
         }
         if (this.id == null && domainEvent.getVersion() == 1) {
-            this.id = (TAggregateRootId) domainEvent.getAggregateRootId();
+            this.id = (TAggregateRootId) domainEvent.getAggregateRootStringId();
         }
-        try {
-            handler.apply(this, domainEvent);
-        } catch (Exception e) {
-            throw new ENodeRuntimeException(e);
-        }
+        handler.apply(this, domainEvent);
     }
 
     private void appendUncommittedEvent(IDomainEvent<TAggregateRootId> domainEvent) {

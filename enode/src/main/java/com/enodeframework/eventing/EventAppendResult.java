@@ -5,10 +5,10 @@ import com.google.common.collect.Lists;
 import java.util.List;
 
 public class EventAppendResult {
-    public static String Success = "";
-    public static String Failed = "";
-    public static String DuplicateEvent = "";
-    public static String DuplicateCommand = "";
+    public static EventAppendResult Success = new EventAppendResult();
+    public static EventAppendResult Failed = new EventAppendResult();
+    public static EventAppendResult DuplicateEvent = new EventAppendResult();
+    public static EventAppendResult DuplicateCommand = new EventAppendResult();
 
     public List<String> successAggregateRootIdList = Lists.newArrayList();
     public List<String> duplicateEventAggregateRootIdList = Lists.newArrayList();

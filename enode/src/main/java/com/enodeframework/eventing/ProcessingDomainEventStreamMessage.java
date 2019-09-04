@@ -8,7 +8,7 @@ import com.enodeframework.messaging.IMessageProcessContext;
  * @author anruence@gmail.com
  */
 public class ProcessingDomainEventStreamMessage {
-    public DomainEventStreamMessage message;
+    private DomainEventStreamMessage message;
     private ProcessingDomainEventStreamMessageMailBox mailbox;
     private IMessageProcessContext processContext;
 

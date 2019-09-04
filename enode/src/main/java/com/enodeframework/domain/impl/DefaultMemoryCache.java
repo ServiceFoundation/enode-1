@@ -39,7 +39,7 @@ public class DefaultMemoryCache implements IMemoryCache {
 
     public DefaultMemoryCache() {
         aggregateRootInfoDict = new ConcurrentHashMap<>();
-        taskName = "CleanInactiveAggregates" + System.nanoTime() + new Random().nextInt(10000);
+        taskName = "CleanInactiveAggregates_" + System.nanoTime() + new Random().nextInt(10000);
     }
 
     public DefaultMemoryCache setTimeoutSeconds(int timeoutSeconds) {

@@ -186,7 +186,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                             command.getClass().getName(),
                             command.getId());
                     logger.error(errorMessage);
-                    completeCommand(processingCommand, CommandStatus.Failed, String.class.getName(), errorMessage);
+                    completeCommand(processingCommand, CommandStatus.Failed, String.class.getName(), errorMessage).join();
                     return;
                 }
                 dirtyAggregateRoot = aggregateRoot;
@@ -243,21 +243,6 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                 retryTimes, true);
     }
 
-    private DomainEventStream buildDomainEventStream(IAggregateRoot aggregateRoot, List<IDomainEvent> changedEvents, ProcessingCommand processingCommand) {
-        String commandResult = processingCommand.getCommandExecuteContext().getResult();
-        if (commandResult != null) {
-            processingCommand.getItems().put("CommandResult", commandResult);
-        }
-        return new DomainEventStream(
-                processingCommand.getMessage().getId(),
-                aggregateRoot.getUniqueId(),
-                typeNameProvider.getTypeName(aggregateRoot.getClass()),
-                aggregateRoot.getVersion() + 1,
-                new Date(),
-                changedEvents,
-                processingCommand.getItems());
-    }
-
     private void handleExceptionAsync(ProcessingCommand processingCommand, ICommandHandlerProxy commandHandler, Exception exception, int retryTimes) {
         ICommand command = processingCommand.getMessage();
         IOHelper.tryAsyncActionRecursively("FindEventByCommandIdAsync",
@@ -268,7 +253,6 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                         //这里，我们需要再重新做一遍发布事件这个操作；
                         //之所以要这样做是因为虽然该command产生的事件已经持久化成功，但并不表示事件已经发布出去了；
                         //因为有可能事件持久化成功了，但那时正好机器断电了，则发布事件就没有做；
-                        logger.info("handle command exception,and the command has consumed before,we will publish domain event again and try execute next command mailbox message.", exception);
                         eventService.publishDomainEventAsync(processingCommand, existingEventStream);
                     } else {
                         //到这里，说明当前command执行遇到异常，然后当前command之前也没执行过，是第一次被执行。
@@ -300,7 +284,7 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                 () -> {
                     Map<String, String> serializableInfo = new HashMap<>();
                     exception.serializeTo(serializableInfo);
-                    String exceptionInfo = String.join(",", serializableInfo.entrySet().stream().map(x -> String.format("%s:%s", x.getKey(), x.getValue())).collect(Collectors.toList()));
+                    String exceptionInfo = serializableInfo.entrySet().stream().map(x -> String.format("%s:%s", x.getKey(), x.getValue())).collect(Collectors.joining(","));
                     return String.format("[commandId:%s, exceptionInfo:%s]", processingCommand.getMessage().getId(), exceptionInfo);
                 },
                 errorMessage -> logger.error(String.format("Publish event has unknown exception, the code should not be run to here, errorMessage: %s", errorMessage)),
@@ -403,9 +387,6 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
     }
 
     enum HandlerFindStatus {
-        /**
-         *
-         */
         NotFound,
         Found,
         TooManyHandlerData,

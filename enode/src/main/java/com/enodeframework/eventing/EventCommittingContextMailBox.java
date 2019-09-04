@@ -104,6 +104,7 @@ public class EventCommittingContextMailBox {
      * 请求完成MailBox的单次运行，如果MailBox中还有剩余消息，则继续尝试运行下一次
      */
     public void completeRun() {
+        lastActiveTime = new Date();
         if (logger.isDebugEnabled()) {
             logger.debug("{} complete run, mailboxNumber: {}", getClass().getName(), number);
         }
@@ -112,7 +113,6 @@ public class EventCommittingContextMailBox {
             tryRun();
         }
     }
-
 
     public void removeAggregateAllEventCommittingContexts(String aggregateRootId) {
         aggregateDictDict.remove(aggregateRootId);
@@ -147,6 +147,7 @@ public class EventCommittingContextMailBox {
                 } catch (Exception ex) {
                     logger.error("{} run has unknown exception, mailboxNumber: {}", getClass().getName(), number, ex);
                     Task.sleep(1);
+                    completeRun();
                 }
             }
         }
@@ -162,10 +163,6 @@ public class EventCommittingContextMailBox {
 
     public int getNumber() {
         return number;
-    }
-
-    public void setNumber(int number) {
-        this.number = number;
     }
 }
 

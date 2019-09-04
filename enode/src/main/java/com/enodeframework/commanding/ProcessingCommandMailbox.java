@@ -163,7 +163,9 @@ public class ProcessingCommandMailbox {
     public void resetConsumingSequence(long consumingSequence) {
         this.consumingSequence = consumingSequence;
         lastActiveTime = new Date();
-        logger.debug("{} reset consumingSequence, aggregateRootId: {}, consumingSequence: {}", getClass().getName(), aggregateRootId, consumingSequence);
+        if (logger.isDebugEnabled()) {
+            logger.debug("{} reset consumingSequence, aggregateRootId: {}, consumingSequence: {}", getClass().getName(), aggregateRootId, consumingSequence);
+        }
     }
 
     public void clear() {

@@ -6,7 +6,6 @@ import java.util.Date;
  * @author anruence@gmail.com
  */
 public class StreamRecord {
-    public Long Sequence;
     public String AggregateRootTypeName;
     public String AggregateRootId;
     public int Version;

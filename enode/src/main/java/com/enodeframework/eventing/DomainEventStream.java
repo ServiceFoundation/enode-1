@@ -1,5 +1,6 @@
 package com.enodeframework.eventing;
 
+import com.enodeframework.common.exception.ENodeRuntimeException;
 import com.enodeframework.common.utilities.ObjectId;
 
 import java.util.Date;
@@ -33,7 +34,7 @@ public class DomainEventStream {
         int sequence = 1;
         for (IDomainEvent event : events) {
             if (event.getVersion() != this.getVersion()) {
-                throw new RuntimeException(String.format("Invalid domain event version, aggregateRootTypeName: %s aggregateRootId: %s expected version: %d, but was: %d",
+                throw new ENodeRuntimeException(String.format("Invalid domain event version, aggregateRootTypeName: %s aggregateRootId: %s expected version: %d, but was: %d",
                         this.getAggregateRootTypeName(),
                         this.getAggregateRootId(),
                         this.getVersion(),

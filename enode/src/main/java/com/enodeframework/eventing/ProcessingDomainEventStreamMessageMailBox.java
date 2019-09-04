@@ -35,10 +35,6 @@ public class ProcessingDomainEventStreamMessageMailBox {
         return aggregateRootId;
     }
 
-    public void setAggregateRootId(String aggregateRootId) {
-        this.aggregateRootId = aggregateRootId;
-    }
-
     public boolean isRunning() {
         return running;
     }
