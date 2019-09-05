@@ -4,7 +4,6 @@ import com.enodeframework.commanding.ICommand;
 import com.enodeframework.commanding.ICommandContext;
 import com.enodeframework.commanding.ICommandHandlerProxy;
 import com.enodeframework.common.container.IObjectContainer;
-import com.enodeframework.common.exception.IORuntimeException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.invoke.MethodHandle;
@@ -38,9 +37,6 @@ public class CommandHandlerProxy implements ICommandHandlerProxy {
             }
             future.complete(null);
         } catch (Throwable throwable) {
-            if (throwable.getCause() instanceof IORuntimeException) {
-                throwable = new IORuntimeException(throwable);
-            }
             future.completeExceptionally(throwable);
         }
         return future;

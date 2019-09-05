@@ -13,8 +13,8 @@ import com.enodeframework.domain.IAggregateRoot;
 import com.enodeframework.eventing.DomainEventStream;
 import com.enodeframework.eventing.DomainEventStreamMessage;
 import com.enodeframework.eventing.EventAppendResult;
+import com.enodeframework.eventing.IEventStore;
 import com.enodeframework.eventing.ProcessingDomainEventStreamMessage;
-import com.enodeframework.eventing.impl.InMemoryEventStore;
 import com.enodeframework.tests.Commands.AggregateThrowExceptionCommand;
 import com.enodeframework.tests.Commands.AsyncHandlerBaseCommand;
 import com.enodeframework.tests.Commands.AsyncHandlerChildCommand;
@@ -72,7 +72,7 @@ public class CommandAndEventServiceTest extends AbstractTest {
     private static Logger _logger = LoggerFactory.getLogger(CommandAndEventServiceTest.class);
 
     @Autowired
-    private InMemoryEventStore _eventStore;
+    private IEventStore _eventStore;
 
     @Test
     public void create_and_update_aggregate_test() {
@@ -592,7 +592,7 @@ public class CommandAndEventServiceTest extends AbstractTest {
         AsyncTaskResult<EventAppendResult> result = await(_eventStore.batchAppendAsync(Lists.newArrayList(eventStream)));
         Assert.assertNotNull(result);
         Assert.assertEquals(AsyncTaskStatus.Success, result.getStatus());
-//        Assert.assertEquals(EventAppendResult.Success, result.getData());
+        assertAppendResult(result.getData());
         _logger.info("----create_concurrent_conflict_and_then_update_many_times_test, _eventStore.appendAsync success");
         AsyncTaskResult result2 = await(_publishedVersionStore.updatePublishedVersionAsync("DefaultEventProcessor", TestAggregate.class.getName(), aggregateId, 1));
         Assert.assertNotNull(result2);
@@ -655,11 +655,11 @@ public class CommandAndEventServiceTest extends AbstractTest {
                 1,
                 new Date(),
                 Lists.newArrayList(aggregateCreated),
-                null);
+                Maps.newHashMap());
         AsyncTaskResult<EventAppendResult> result = await(_eventStore.batchAppendAsync(Lists.newArrayList(eventStream)));
         Assert.assertNotNull(result);
         Assert.assertEquals(AsyncTaskStatus.Success, result.getStatus());
-        Assert.assertEquals(EventAppendResult.Success, result.getData());
+        assertAppendResult(result.getData());
         AsyncTaskResult result2 = await(_publishedVersionStore.updatePublishedVersionAsync("DefaultEventProcessor", TestAggregate.class.getName(), aggregateId, 1));
         Assert.assertNotNull(result2);
         Assert.assertEquals(AsyncTaskStatus.Success, result2.getStatus());
@@ -699,7 +699,7 @@ public class CommandAndEventServiceTest extends AbstractTest {
         waitHandle.waitOne();
         TestAggregate note = await(_memoryCache.getAsync(aggregateId, TestAggregate.class));
         Assert.assertNotNull(note);
-        Assert.assertEquals(true, createCommandSuccess.get());
+        Assert.assertTrue(createCommandSuccess.get());
         Assert.assertEquals(commandList.size(), note.getVersion());
     }
 
@@ -719,10 +719,10 @@ public class CommandAndEventServiceTest extends AbstractTest {
                 new Date(),
                 Lists.newArrayList(titleChanged),
                 null);
-        AsyncTaskResult result = await(_eventStore.batchAppendAsync(Lists.newArrayList(eventStream)));
+        AsyncTaskResult<EventAppendResult> result = await(_eventStore.batchAppendAsync(Lists.newArrayList(eventStream)));
         Assert.assertNotNull(result);
         Assert.assertEquals(AsyncTaskStatus.Success, result.getStatus());
-        Assert.assertEquals(EventAppendResult.Success, result.getData());
+        assertAppendResult(result.getData());
         AsyncTaskResult result2 = await(_publishedVersionStore.updatePublishedVersionAsync("DefaultEventProcessor", TestAggregate.class.getName(), aggregateId, 1));
         Assert.assertNotNull(result2);
         Assert.assertEquals(AsyncTaskStatus.Success, result2.getStatus());
@@ -790,7 +790,7 @@ public class CommandAndEventServiceTest extends AbstractTest {
         AsyncTaskResult<EventAppendResult> result = await(_eventStore.batchAppendAsync(Lists.newArrayList(eventStream)));
         Assert.assertNotNull(result);
         Assert.assertEquals(AsyncTaskStatus.Success, result.getStatus());
-        Assert.assertEquals(EventAppendResult.Success, result.getData());
+        assertAppendResult(result.getData());
         AsyncTaskResult result2 = await(_publishedVersionStore.updatePublishedVersionAsync("DefaultEventProcessor", TestAggregate.class.getName(), aggregateId, 2));
         Assert.assertNotNull(result2);
         Assert.assertEquals(AsyncTaskStatus.Success, result2.getStatus());
@@ -853,6 +853,7 @@ public class CommandAndEventServiceTest extends AbstractTest {
         HandlerTypes.clear();
     }
 
+    @Test
     public void sequence_domain_event_process_test() {
         TestAggregate note = new TestAggregate(ObjectId.generateNewStringId(), "initial title");
         DomainEventStreamMessage message1 = CreateMessage(note);
@@ -882,5 +883,11 @@ public class CommandAndEventServiceTest extends AbstractTest {
                 aggregateRoot.getChanges(),
                 Maps.newHashMap()
         );
+    }
+
+    private void assertAppendResult(EventAppendResult appendResult) {
+        Assert.assertEquals(1, appendResult.getSuccessAggregateRootIdList().size());
+        Assert.assertEquals(0, appendResult.getDuplicateCommandIdList().size());
+        Assert.assertEquals(0, appendResult.getDuplicateEventAggregateRootIdList().size());
     }
 }

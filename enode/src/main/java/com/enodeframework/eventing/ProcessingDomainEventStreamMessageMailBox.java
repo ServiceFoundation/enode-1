@@ -46,7 +46,7 @@ public class ProcessingDomainEventStreamMessageMailBox {
     public void enqueueMessage(ProcessingDomainEventStreamMessage message) {
         synchronized (lockObj) {
             DomainEventStreamMessage eventStream = message.getMessage();
-            if (eventStream.getVersion() == getLatestHandledEventVersion() + 1) {
+            if (eventStream.getVersion() == latestHandledEventVersion + 1) {
                 message.setMailbox(this);
                 messageQueue.add(message);
                 if (logger.isDebugEnabled()) {
@@ -84,7 +84,7 @@ public class ProcessingDomainEventStreamMessageMailBox {
                 }
                 lastActiveTime = new Date();
                 tryRun();
-            } else if (eventStream.getVersion() > getLatestHandledEventVersion() + 1) {
+            } else if (eventStream.getVersion() > latestHandledEventVersion + 1) {
                 waitingMessageDict.put(eventStream.getVersion(), message);
             }
         }
@@ -146,10 +146,6 @@ public class ProcessingDomainEventStreamMessageMailBox {
 
     private void setAsNotRunning() {
         running = false;
-    }
-
-    public int getLatestHandledEventVersion() {
-        return latestHandledEventVersion;
     }
 
     public int getWaitingMessageCount() {

@@ -4,6 +4,7 @@ import com.enodeframework.ObjectContainer;
 import com.enodeframework.common.io.AsyncTaskResult;
 import com.enodeframework.common.io.AsyncTaskStatus;
 import com.enodeframework.common.utilities.Ensure;
+import com.enodeframework.configurations.DataSourceKey;
 import com.enodeframework.configurations.DefaultDBConfigurationSetting;
 import com.enodeframework.configurations.OptionSetting;
 import com.enodeframework.eventing.IPublishedVersionStore;
@@ -30,8 +31,8 @@ public class MysqlPublishedVersionStore implements IPublishedVersionStore {
     public MysqlPublishedVersionStore(DataSource ds, OptionSetting optionSetting) {
         Ensure.notNull(ds, "ds");
         if (optionSetting != null) {
-            tableName = optionSetting.getOptionValue("TableName");
-            uniqueIndexName = optionSetting.getOptionValue("UniqueIndexName");
+            tableName = optionSetting.getOptionValue(DataSourceKey.PUBLISHED_VERSION_TABLENAME);
+            uniqueIndexName = optionSetting.getOptionValue(DataSourceKey.PUBLISHED_VERSION_UNIQUE_INDEX_NAME);
         } else {
             DefaultDBConfigurationSetting setting = new DefaultDBConfigurationSetting();
             tableName = setting.getPublishedVersionTableName();
@@ -67,21 +68,21 @@ public class MysqlPublishedVersionStore implements IPublishedVersionStore {
                 future.complete(AsyncTaskResult.Success);
                 return;
             }
-            if (x.cause() instanceof SQLException) {
-                SQLException ex = (SQLException) x.cause();
+            future.completeExceptionally(x.cause());
+        });
+        return future.exceptionally(throwable -> {
+            if (throwable instanceof SQLException) {
+                SQLException ex = (SQLException) throwable;
                 if (ex.getErrorCode() == 1062 && ex.getMessage().contains(uniqueIndexName)) {
                     future.complete(AsyncTaskResult.Success);
                 }
                 logger.error("Insert or update aggregate published version has sql exception.", ex);
-                future.complete(new AsyncTaskResult(AsyncTaskStatus.IOException, ex.getMessage()));
-                return;
+                return new AsyncTaskResult(AsyncTaskStatus.IOException, ex.getMessage());
             }
-            logger.error("Insert or update aggregate published version has unknown exception.", x.cause());
-            future.complete(new AsyncTaskResult(AsyncTaskStatus.Failed, x.cause().getMessage()));
+            logger.error("Insert or update aggregate published version has unknown exception.", throwable);
+            return new AsyncTaskResult(AsyncTaskStatus.Failed, throwable.getMessage());
         });
-        return future;
     }
-
 
     @Override
     public CompletableFuture<AsyncTaskResult<Integer>> getPublishedVersionAsync(String processorName, String aggregateRootTypeName, String aggregateRootId) {
@@ -99,15 +100,16 @@ public class MysqlPublishedVersionStore implements IPublishedVersionStore {
                 future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Success, result));
                 return;
             }
-            Throwable ex = x.cause();
-            if (x.cause() instanceof SQLException) {
-                logger.error("Get aggregate published version has sql exception.", ex);
-                future.complete(new AsyncTaskResult<>(AsyncTaskStatus.IOException, ex.getMessage()));
-                return;
-            }
-            logger.error("Get aggregate published version has unknown exception.", ex);
-            future.complete(new AsyncTaskResult<>(AsyncTaskStatus.Failed, ex.getMessage()));
+            future.completeExceptionally(x.cause());
         });
-        return future;
+        return future.exceptionally(throwable -> {
+            if (throwable instanceof SQLException) {
+                SQLException ex = (SQLException) throwable;
+                logger.error("Get aggregate published version has sql exception.", ex);
+                return new AsyncTaskResult<>(AsyncTaskStatus.IOException, ex.getMessage());
+            }
+            logger.error("Get aggregate published version has unknown exception.", throwable);
+            return new AsyncTaskResult<>(AsyncTaskStatus.Failed, throwable.getMessage());
+        });
     }
 }

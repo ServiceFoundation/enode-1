@@ -1,7 +1,6 @@
 package com.enodeframework.messaging.impl;
 
 import com.enodeframework.common.container.IObjectContainer;
-import com.enodeframework.common.exception.IORuntimeException;
 import com.enodeframework.common.io.AsyncTaskResult;
 import com.enodeframework.messaging.IMessage;
 import com.enodeframework.messaging.IMessageHandlerProxy2;
@@ -38,9 +37,6 @@ public class MessageHandlerProxy2 implements IMessageHandlerProxy2 {
             }
             future.complete((AsyncTaskResult) result);
         } catch (Throwable throwable) {
-            if (throwable.getCause() instanceof IORuntimeException) {
-                throwable = new IORuntimeException(throwable);
-            }
             future.completeExceptionally(throwable);
         }
         return future;

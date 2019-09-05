@@ -151,6 +151,7 @@ public class DefaultEventCommittingService implements IEventCommittingService {
                             if (committingContextOptional.isPresent()) {
                                 EventCommittingContext committingContext = committingContextOptional.get();
                                 ProcessingCommandMailbox commandMailBox = committingContext.getProcessingCommand().getMailBox();
+                                resetCommandMailBoxConsumingSequence(committingContext, committingContext.getProcessingCommand().getSequence() + 1);
                                 tryToRepublishEventAsync(committingContext, 0);
                             }
 

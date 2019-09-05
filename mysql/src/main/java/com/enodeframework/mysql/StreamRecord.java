@@ -1,4 +1,4 @@
-package com.enodeframework.eventing.impl;
+package com.enodeframework.mysql;
 
 import java.util.Date;
 
@@ -6,6 +6,8 @@ import java.util.Date;
  * @author anruence@gmail.com
  */
 public class StreamRecord {
+
+    public String Sequence;
     public String AggregateRootTypeName;
     public String AggregateRootId;
     public int Version;

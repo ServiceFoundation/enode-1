@@ -318,19 +318,19 @@ public class DefaultProcessingCommandHandler implements IProcessingCommandHandle
                                 command.getAggregateRootId());
                     }
                     return asyncResult.exceptionally(ex -> {
-                        if (ex.getCause() instanceof IORuntimeException) {
-                            logger.error(String.format("Handle command async has io exception. handlerType:%s, commandType:%s, commandId:%s, aggregateRootId:%s",
+                        if (ex instanceof IORuntimeException || ex.getCause() instanceof IORuntimeException) {
+                            logger.error("Handle command async has io exception. handlerType:{}, commandType:{}, commandId:{}, aggregateRootId:{}",
                                     commandHandler.getInnerObject().getClass().getName(),
                                     command.getClass().getName(),
                                     command.getId(),
-                                    command.getAggregateRootId()), ex);
+                                    command.getAggregateRootId(), ex);
                             return new AsyncTaskResult<>(AsyncTaskStatus.IOException, ex.getMessage());
                         }
-                        logger.error(String.format("Handle command async has unknown exception. handlerType:%s, commandType:%s, commandId:%s, aggregateRootId:%s",
+                        logger.error("Handle command async has unknown exception. handlerType:{}, commandType:{}, commandId:{}, aggregateRootId:{}",
                                 commandHandler.getInnerObject().getClass().getName(),
                                 command.getClass().getName(),
                                 command.getId(),
-                                command.getAggregateRootId()), ex);
+                                command.getAggregateRootId(), ex);
                         return new AsyncTaskResult<>(AsyncTaskStatus.Failed, ex.getMessage());
                     });
                 },

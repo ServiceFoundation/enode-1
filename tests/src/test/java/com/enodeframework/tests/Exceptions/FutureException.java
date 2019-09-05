@@ -6,11 +6,11 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 
-public class Future {
+public class FutureException {
+
     @Test
     public void test_can_throw_in_future() throws Exception {
         CompletableFuture<Integer> future = new CompletableFuture<>();
-
         future = CompletableFuture.supplyAsync(() -> {
             throw new IORuntimeException("test exception");
         });

@@ -138,17 +138,17 @@ public class EventCommittingContextMailBox {
                 } else {
                     break;
                 }
-                if (messageList.size() == 0) {
-                    completeRun();
-                    return;
-                }
-                try {
-                    handleMessageAction.apply(messageList);
-                } catch (Exception ex) {
-                    logger.error("{} run has unknown exception, mailboxNumber: {}", getClass().getName(), number, ex);
-                    Task.sleep(1);
-                    completeRun();
-                }
+            }
+            if (messageList.size() == 0) {
+                completeRun();
+                return;
+            }
+            try {
+                handleMessageAction.apply(messageList);
+            } catch (Exception ex) {
+                logger.error("{} run has unknown exception, mailboxNumber: {}", getClass().getName(), number, ex);
+                Task.sleep(1);
+                completeRun();
             }
         }
     }
