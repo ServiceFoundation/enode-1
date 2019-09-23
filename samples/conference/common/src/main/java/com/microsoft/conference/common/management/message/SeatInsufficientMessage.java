@@ -1,6 +1,6 @@
 package com.microsoft.conference.common.management.message;
 
-import com.enodeframework.infrastructure.ApplicationMessage;
+import org.enodeframework.infrastructure.ApplicationMessage;
 
 public class SeatInsufficientMessage extends ApplicationMessage {
     public String ConferenceId;

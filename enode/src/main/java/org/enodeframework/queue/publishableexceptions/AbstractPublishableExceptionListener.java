@@ -1,0 +1,60 @@
+package org.enodeframework.queue.publishableexceptions;
+
+import org.enodeframework.common.exception.ENodeRuntimeException;
+import org.enodeframework.common.serializing.JsonTool;
+import org.enodeframework.infrastructure.IMessageProcessor;
+import org.enodeframework.infrastructure.IPublishableException;
+import org.enodeframework.infrastructure.ISequenceMessage;
+import org.enodeframework.infrastructure.ITypeNameProvider;
+import org.enodeframework.infrastructure.ProcessingPublishableExceptionMessage;
+import org.enodeframework.infrastructure.impl.DefaultMessageProcessContext;
+import org.enodeframework.queue.IMessageContext;
+import org.enodeframework.queue.IMessageHandler;
+import org.enodeframework.queue.QueueMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+
+public abstract class AbstractPublishableExceptionListener implements IMessageHandler {
+    private static final Logger logger = LoggerFactory.getLogger(AbstractPublishableExceptionListener.class);
+    @Autowired
+    protected ITypeNameProvider typeNameProvider;
+    @Autowired
+    protected IMessageProcessor<ProcessingPublishableExceptionMessage, IPublishableException> publishableExceptionProcessor;
+
+    public AbstractPublishableExceptionListener setTypeNameProvider(ITypeNameProvider typeNameProvider) {
+        this.typeNameProvider = typeNameProvider;
+        return this;
+    }
+
+    public AbstractPublishableExceptionListener setPublishableExceptionProcessor(IMessageProcessor<ProcessingPublishableExceptionMessage, IPublishableException> publishableExceptionProcessor) {
+        this.publishableExceptionProcessor = publishableExceptionProcessor;
+        return this;
+    }
+
+    @Override
+    public void handle(QueueMessage queueMessage, IMessageContext context) {
+        PublishableExceptionMessage exceptionMessage = JsonTool.deserialize(queueMessage.getBody(), PublishableExceptionMessage.class);
+        Class exceptionType = typeNameProvider.getType(exceptionMessage.getExceptionType());
+        IPublishableException exception;
+        try {
+            exception = (IPublishableException) exceptionType.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new ENodeRuntimeException(e);
+        }
+        exception.setId(exceptionMessage.getUniqueId());
+        exception.setTimestamp(exceptionMessage.getTimestamp());
+        exception.restoreFrom(exceptionMessage.getSerializableInfo());
+        if (exception instanceof ISequenceMessage) {
+            ISequenceMessage sequenceMessage = (ISequenceMessage) exception;
+            sequenceMessage.setAggregateRootTypeName(exceptionMessage.getAggregateRootTypeName());
+            sequenceMessage.setAggregateRootStringId(exceptionMessage.getAggregateRootId());
+        }
+        DefaultMessageProcessContext processContext = new DefaultMessageProcessContext(queueMessage, context);
+        ProcessingPublishableExceptionMessage processingMessage = new ProcessingPublishableExceptionMessage(exception, processContext);
+        if (logger.isDebugEnabled()) {
+            logger.debug("ENode exception message received, messageId: {}, aggregateRootId: {}, aggregateRootType: {}", exceptionMessage.getUniqueId(), exceptionMessage.getAggregateRootId(), exceptionMessage.getAggregateRootTypeName());
+        }
+        publishableExceptionProcessor.process(processingMessage);
+    }
+}

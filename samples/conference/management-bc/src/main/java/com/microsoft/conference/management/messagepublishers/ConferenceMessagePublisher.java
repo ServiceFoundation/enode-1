@@ -1,9 +1,9 @@
 package com.microsoft.conference.management.messagepublishers;
 
-import com.enodeframework.annotation.Event;
-import com.enodeframework.common.io.AsyncTaskResult;
-import com.enodeframework.infrastructure.IApplicationMessage;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import org.enodeframework.annotation.Event;
+import org.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.infrastructure.IApplicationMessage;
+import org.enodeframework.infrastructure.IMessagePublisher;
 import com.microsoft.conference.common.management.message.SeatInsufficientMessage;
 import com.microsoft.conference.common.management.message.SeatReservationItem;
 import com.microsoft.conference.common.management.message.SeatsReservationCancelledMessage;
@@ -17,7 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.stream.Collectors;
 
-import static com.enodeframework.common.io.Task.await;
+import static org.enodeframework.common.io.Task.await;
 
 /**
  * IMessageHandler<SeatsReserved>,

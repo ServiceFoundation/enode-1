@@ -1,4 +1,4 @@
-import com.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.common.io.AsyncTaskResult;
 import com.microsoft.conference.registration.domain.SeatAssigning.Events.OrderSeatAssignmentsCreated;
 import com.microsoft.conference.registration.domain.SeatAssigning.Events.SeatAssigned;
 import com.microsoft.conference.registration.domain.SeatAssigning.Events.SeatUnassigned;

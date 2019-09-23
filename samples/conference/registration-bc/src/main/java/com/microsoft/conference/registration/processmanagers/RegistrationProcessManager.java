@@ -1,8 +1,8 @@
 package com.microsoft.conference.registration.processmanagers;
 
-import com.enodeframework.commanding.ICommandService;
-import com.enodeframework.common.io.AsyncTaskResult;
-import com.enodeframework.common.io.Task;
+import org.enodeframework.commanding.ICommandService;
+import org.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.common.io.Task;
 import com.microsoft.conference.common.management.commands.CancelSeatReservation;
 import com.microsoft.conference.common.management.commands.CommitSeatReservation;
 import com.microsoft.conference.common.management.commands.MakeSeatReservation;

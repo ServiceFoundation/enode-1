@@ -1,6 +1,6 @@
 package com.microsoft.conference.payments.domain.Events;
 
-import com.enodeframework.eventing.DomainEvent;
+import org.enodeframework.eventing.DomainEvent;
 import com.microsoft.conference.payments.domain.Models.Payment;
 
 public class PaymentCompleted extends DomainEvent<String> {

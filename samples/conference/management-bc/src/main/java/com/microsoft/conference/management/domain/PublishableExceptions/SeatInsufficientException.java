@@ -1,6 +1,6 @@
 package com.microsoft.conference.management.domain.PublishableExceptions;
 
-import com.enodeframework.infrastructure.PublishableException;
+import org.enodeframework.infrastructure.PublishableException;
 
 import java.util.Map;
 

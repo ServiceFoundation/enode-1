@@ -1,6 +1,6 @@
 package com.microsoft.conference.common.payment.message;
 
-import com.enodeframework.infrastructure.ApplicationMessage;
+import org.enodeframework.infrastructure.ApplicationMessage;
 
 public abstract class PaymentMessage extends ApplicationMessage {
     public String PaymentId;

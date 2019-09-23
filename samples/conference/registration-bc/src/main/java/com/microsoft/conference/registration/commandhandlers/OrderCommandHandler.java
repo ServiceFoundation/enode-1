@@ -1,6 +1,6 @@
 package com.microsoft.conference.registration.commandhandlers;
 
-import com.enodeframework.commanding.ICommandContext;
+import org.enodeframework.commanding.ICommandContext;
 import com.microsoft.conference.common.registration.commands.Orders.AssignRegistrantDetails;
 import com.microsoft.conference.common.registration.commands.Orders.CloseOrder;
 import com.microsoft.conference.common.registration.commands.Orders.ConfirmPayment;
@@ -15,7 +15,7 @@ import com.microsoft.conference.registration.domain.SeatType;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.enodeframework.common.io.Task.await;
+import static org.enodeframework.common.io.Task.await;
 
 public class OrderCommandHandler {
     private IPricingService _pricingService;

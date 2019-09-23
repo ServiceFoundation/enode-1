@@ -1,7 +1,7 @@
 package com.microsoft.conference.management.readmodel;
 
-import com.enodeframework.annotation.Event;
-import com.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.annotation.Event;
+import org.enodeframework.common.io.AsyncTaskResult;
 import com.microsoft.conference.management.domain.Events.ConferenceCreated;
 import com.microsoft.conference.management.domain.Events.ConferencePublished;
 import com.microsoft.conference.management.domain.Events.ConferenceUnpublished;

@@ -1,6 +1,6 @@
 package com.microsoft.conference.payments.readmodel;
 
-import com.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.common.io.AsyncTaskResult;
 import com.microsoft.conference.payments.domain.Events.PaymentCompleted;
 import com.microsoft.conference.payments.domain.Events.PaymentInitiated;
 import com.microsoft.conference.payments.domain.Events.PaymentRejected;

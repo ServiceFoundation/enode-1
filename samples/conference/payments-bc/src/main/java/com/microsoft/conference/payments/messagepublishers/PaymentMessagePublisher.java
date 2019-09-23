@@ -1,14 +1,14 @@
 package com.microsoft.conference.payments.messagepublishers;
 
-import com.enodeframework.common.io.AsyncTaskResult;
-import com.enodeframework.infrastructure.IApplicationMessage;
-import com.enodeframework.infrastructure.IMessagePublisher;
+import org.enodeframework.common.io.AsyncTaskResult;
+import org.enodeframework.infrastructure.IApplicationMessage;
+import org.enodeframework.infrastructure.IMessagePublisher;
 import com.microsoft.conference.common.payment.message.PaymentCompletedMessage;
 import com.microsoft.conference.common.payment.message.PaymentRejectedMessage;
 import com.microsoft.conference.payments.domain.Events.PaymentCompleted;
 import com.microsoft.conference.payments.domain.Events.PaymentRejected;
 
-import static com.enodeframework.common.io.Task.await;
+import static org.enodeframework.common.io.Task.await;
 
 public class PaymentMessagePublisher {
     private IMessagePublisher<IApplicationMessage> _messagePublisher;

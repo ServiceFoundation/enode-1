@@ -1,6 +1,6 @@
 package com.microsoft.conference.payments.domain.Events;
 
-import com.enodeframework.eventing.DomainEvent;
+import org.enodeframework.eventing.DomainEvent;
 import com.microsoft.conference.payments.domain.Models.PaymentItem;
 
 import java.math.BigDecimal;

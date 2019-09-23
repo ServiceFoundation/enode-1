@@ -1,7 +1,7 @@
 package com.microsoft.conference.payments.commandhandlers;
 
-import com.enodeframework.annotation.Command;
-import com.enodeframework.commanding.ICommandContext;
+import org.enodeframework.annotation.Command;
+import org.enodeframework.commanding.ICommandContext;
 import com.microsoft.conference.common.payment.commands.CancelPayment;
 import com.microsoft.conference.common.payment.commands.CompletePayment;
 import com.microsoft.conference.common.payment.commands.CreatePayment;
@@ -11,7 +11,7 @@ import com.microsoft.conference.payments.domain.Models.PaymentItem;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.enodeframework.common.io.Task.await;
+import static org.enodeframework.common.io.Task.await;
 
 /**
  * ICommandHandler<CreatePayment>,
